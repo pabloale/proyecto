@@ -113,10 +113,10 @@ while True:
     #print("sensor sder: ", retorno_superior_derecho)
     #print("Terminaron")
     
-    LED_VERDE_IZQUIERDO = 5
-    LED_ROJO_IZQUIERDO = 6
-    LED_VERDE_DERECHO = 13
-    LED_ROJO_DERECHO = 19
+    LED_VERDE_IZQUIERDO = 19
+    LED_ROJO_IZQUIERDO = 26
+    LED_VERDE_DERECHO = 16
+    LED_ROJO_DERECHO = 20
     VIBRADOR = 21
     UMBRAL_LECTURA_INFERIOR = 200
     UMBRAL_LECTURA_POSTERIOR = 400

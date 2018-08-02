@@ -9,7 +9,7 @@ from  multiprocessing.pool import ThreadPool
 CANTIDAD_MUESTRAS = 10
 
 
-def readadc(adcnum, clockpin, mosipin, misopin, cspin):
+def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin):
     
     global CANTIDAD_MUESTRAS
     h = 0
@@ -78,6 +78,9 @@ def readDistance(triggerpin, echopin):
     
     #print("por calcular el tiempo de respuesta")
     
+    pulse_start_time = 0
+    pulse_end_time = 0
+    
     while GPIO.input(echopin)==0:
         pulse_start_time = time.time()
         #print("while PIN_ECHO = 0")
@@ -106,7 +109,7 @@ def activarActuadores(ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador
 
 
 #Configuracion de threads
-pool = ThreadPool(processes=5)
+pool = ThreadPool(processes=6)
 DEBUG = 1
 #Configuracion de pines de la placa
 SPICLK = 18
@@ -115,14 +118,11 @@ SPIMOSI = 24
 SPICS = 25
 
 #Pines sensor de distancia
-DISTANCE_PIN_TRIGGER = 4 #BCM GPIO 04 // BOARD PIN 07
-DISTANCE_PIN_ECHO = 17 #BCM GPIO 17 // BOARD PIN 11
+DISTANCE_PIN_TRIGGER_ABAJO = 4 #BCM GPIO 04 // BOARD PI0N 07
+DISTANCE_PIN_ECHO_ABAJO = 3 #BCM GPIO 3 // BOARD PIN 05
 
-#Seteo de modo de pines
-GPIO.setup(SPIMOSI, GPIO.OUT)
-GPIO.setup(SPIMISO, GPIO.IN)
-GPIO.setup(SPICLK, GPIO.OUT)
-GPIO.setup(SPICS, GPIO.OUT)
+DISTANCE_PIN_TRIGGER_ARRIBA = 17 #BCM GPIO 17 // BOARD PIN 11
+DISTANCE_PIN_ECHO_ARRIBA = 27 #BCM GPIO 27 // BOARD PIN 13
 
 #Pines de lectura analogicos (MCP3008)
 fsr_inferior_izquierdo = 0;
@@ -130,6 +130,30 @@ fsr_inferior_derecho = 2;
 fsr_superior_derecho = 4;
 fsr_superior_izquierdo = 7;
 
+#Pines de los actuadores
+LED_VERDE_IZQUIERDO = 19 #BCM GPIO 19 // BOARD PIN 35
+LED_ROJO_IZQUIERDO = 26 #BCM GPIO 26 // BOARD PIN 37
+LED_VERDE_DERECHO = 16 #BCM GPIO 16 // BOARD PIN 36
+LED_ROJO_DERECHO = 20 #BCM GPIO 20 // BOARD PIN 38
+VIBRADOR = 21 #BCM GPIO 21 // BOARD PIN 40
+
+#Seteo de modo de pines
+GPIO.setup(SPIMOSI, GPIO.OUT)
+GPIO.setup(SPIMISO, GPIO.IN)
+GPIO.setup(SPICLK, GPIO.OUT)
+GPIO.setup(SPICS, GPIO.OUT)
+
+GPIO.setup(LED_VERDE_DERECHO, GPIO.OUT)
+GPIO.setup(LED_ROJO_DERECHO, GPIO.OUT)
+GPIO.setup(LED_VERDE_IZQUIERDO, GPIO.OUT)
+GPIO.setup(LED_ROJO_IZQUIERDO, GPIO.OUT)
+GPIO.setup(VIBRADOR, GPIO.OUT)
+
+#Umbrales de lectura de los sensores
+UMBRAL_LECTURA_INFERIOR = 200
+UMBRAL_LECTURA_POSTERIOR = 400
+UMBRAL_LECTURA_ABAJO = 35
+UMBRAL_LECTURA_ARRIBA = 45
 
 #configuracion de lectura
 ultima_lectura = 0
@@ -139,124 +163,115 @@ tolerancia = 5
 while True:
     lectura_cambio = False
     
-    lectura_actual_inferior_izquierdo = pool.apply_async(readadc, (fsr_inferior_izquierdo, SPICLK, SPIMOSI, SPIMISO, SPICS))
-    lectura_actual_superior_izquierdo = pool.apply_async(readadc, (fsr_superior_izquierdo, SPICLK, SPIMOSI, SPIMISO, SPICS))
-    lectura_actual_inferior_derecho = pool.apply_async(readadc, (fsr_inferior_derecho, SPICLK, SPIMOSI, SPIMISO, SPICS))
-    lectura_actual_superior_derecho = pool.apply_async(readadc, (fsr_superior_derecho, SPICLK, SPIMOSI, SPIMISO, SPICS))
+    lectura_actual_inferior_izquierdo = pool.apply_async(readFuerzaResist, (fsr_inferior_izquierdo, SPICLK, SPIMOSI, SPIMISO, SPICS))
+    lectura_actual_superior_izquierdo = pool.apply_async(readFuerzaResist, (fsr_superior_izquierdo, SPICLK, SPIMOSI, SPIMISO, SPICS))
+    lectura_actual_inferior_derecho = pool.apply_async(readFuerzaResist, (fsr_inferior_derecho, SPICLK, SPIMOSI, SPIMISO, SPICS))
+    lectura_actual_superior_derecho = pool.apply_async(readFuerzaResist, (fsr_superior_derecho, SPICLK, SPIMOSI, SPIMISO, SPICS))
     
-    lectura_distancia = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER, DISTANCE_PIN_ECHO))
+    lectura_distancia_abajo = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO))
+    lectura_distancia_arriba = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA))
     
     retorno_inferior_izquierdo = lectura_actual_inferior_izquierdo.get()
     retorno_superior_izquierdo = lectura_actual_superior_izquierdo.get()
     retorno_inferior_derecho = lectura_actual_inferior_derecho.get()
     retorno_superior_derecho = lectura_actual_superior_derecho.get()
     
-    retorno_distancia = lectura_distancia.get()
+    retorno_distancia_abajo = lectura_distancia_abajo.get()
+    retorno_distancia_arriba = lectura_distancia_arriba.get() 
     
-    print("sensor INF IZQ: ", retorno_inferior_izquierdo, " Sensor SUP IZQ: ", retorno_superior_izquierdo, " Sensor INF DER: ", retorno_inferior_derecho, " Sensor SUP DER: ", retorno_superior_derecho)
+##    print("sensor INF IZQ: ", retorno_inferior_izquierdo, " Sensor SUP IZQ: ", retorno_superior_izquierdo, " Sensor INF DER: ", retorno_inferior_derecho, " Sensor SUP DER: ", retorno_superior_derecho)
     #print("sensor sizq: ", retorno_superior_izquierdo)
     #print("sensor ider: ", retorno_inferior_derecho)
     #print("sensor sder: ", retorno_superior_derecho)
     #print("Terminaron")
-    print("distancia: ", retorno_distancia)
-    
-    LED_VERDE_IZQUIERDO = 5
-    LED_ROJO_IZQUIERDO = 6
-    LED_VERDE_DERECHO = 13
-    LED_ROJO_DERECHO = 19
-    VIBRADOR = 21
-    UMBRAL_LECTURA_INFERIOR = 200
-    UMBRAL_LECTURA_POSTERIOR = 400
-    
-    GPIO.setup(LED_VERDE_DERECHO, GPIO.OUT)
-    GPIO.setup(LED_ROJO_DERECHO, GPIO.OUT)
-    GPIO.setup(LED_VERDE_IZQUIERDO, GPIO.OUT)
-    GPIO.setup(LED_ROJO_IZQUIERDO, GPIO.OUT)
-    GPIO.setup(VIBRADOR, GPIO.OUT)
+    print("distancia abajo: ", retorno_distancia_abajo)
+    print("distancia arriba: ", retorno_distancia_arriba)
     
     lado_izquierdo = retorno_inferior_izquierdo + retorno_superior_izquierdo
     lado_derecho = retorno_inferior_derecho + retorno_superior_derecho
     
-    GPIO.output(LED_VERDE_IZQUIERDO, GPIO.LOW)
-    GPIO.output(LED_ROJO_IZQUIERDO, GPIO.LOW)
-    GPIO.output(LED_VERDE_DERECHO, GPIO.LOW)
-    GPIO.output(LED_ROJO_DERECHO, GPIO.LOW)
-    GPIO.output(VIBRADOR, GPIO.LOW)
+    #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+    activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.LOW, GPIO.LOW, GPIO.LOW)
     
     #No hay nadie sentado
     if (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
-		#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-		activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.LOW, GPIO.LOW, GPIO.LOW)
-	
+        #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+        activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.LOW, GPIO.LOW, GPIO.LOW)
+
     else: #Hay alguien sentado
 
-		#1 sensor activado
-        #Solo el sensor de SUPERIOR IZQUIERDO se activó
-        if (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-        #Solo el sensor de INFERIOR IZQUIERDO se activó
-        elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-        #Solo el sensor de SUPERIOR DERECHO se activó
-        elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-        #Solo el sensor de INFERIOR DERECHO se activó
-        elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+        if (retorno_distancia_abajo > UMBRAL_LECTURA_ABAJO or retorno_distancia_arriba > UMBRAL_LECTURA_ARRIBA):
+            #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
             activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
 
-        #2 sensores activos
-        #Activados sensores SUPERIOR IZQ e INFERIOR IZQ
-        elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
-        #Activados sensores INFERIOR IZQ y SUPERIOR DER
-        elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-        #Activados sensores INFERIOR DER Y SUPERIOR DER
-        elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
-        #Activados sensores SUPERIOR IZQ y SUPERIOR DER
-        elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-        #Activados sensores SUPERIOR IZQ e INFERIOR DER
-        elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-        #Activados sensores INFERIOR IZQ e INFERIOR DER
-        elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+        else:
+            #1 sensor activado
+            #Solo el sensor de SUPERIOR IZQUIERDO se activó
+            if (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            #Solo el sensor de INFERIOR IZQUIERDO se activó
+            elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            #Solo el sensor de SUPERIOR DERECHO se activó
+            elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            #Solo el sensor de INFERIOR DERECHO se activó
+            elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
 
-        #3 sensores activos
-        #Activados sensores SUPERIOR e INFERIOR IZQ y SUPERIOR DER
-        elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
-        #Activados sensores SUPERIOR e INFERIOR IZQ y INFERIOR DER
-        elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
-        #Activados sensores SUPERIOR IZQ e INFERIOR Y SUPERIOR DER
-        elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
-        #Activados sensores INFERIOR IZQ e INFERIOR Y SUPERIOR DER
-        elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
+            #2 sensores activos
+            #Activados sensores SUPERIOR IZQ e INFERIOR IZQ
+            elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
+            #Activados sensores INFERIOR IZQ y SUPERIOR DER
+            elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            #Activados sensores INFERIOR DER Y SUPERIOR DER
+            elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
+            #Activados sensores SUPERIOR IZQ y SUPERIOR DER
+            elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            #Activados sensores SUPERIOR IZQ e INFERIOR DER
+            elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            #Activados sensores INFERIOR IZQ e INFERIOR DER
+            elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
 
-        #4 sensores activos
-        #Activados sensores SUPERIOR e INFERIOR IZQ e INFERIOR Y SUPERIOR DER
-        elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
-			#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-            activarActuadores(GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.LOW)
+            #3 sensores activos
+            #Activados sensores SUPERIOR e INFERIOR IZQ y SUPERIOR DER
+            elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho < UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
+            #Activados sensores SUPERIOR e INFERIOR IZQ y INFERIOR DER
+            elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho < UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
+            #Activados sensores SUPERIOR IZQ e INFERIOR Y SUPERIOR DER
+            elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo < UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
+            #Activados sensores INFERIOR IZQ e INFERIOR Y SUPERIOR DER
+            elif (retorno_superior_izquierdo < UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
+
+            #4 sensores activos
+            #Activados sensores SUPERIOR e INFERIOR IZQ e INFERIOR Y SUPERIOR DER
+            elif (retorno_superior_izquierdo > UMBRAL_LECTURA_POSTERIOR and retorno_inferior_izquierdo > UMBRAL_LECTURA_INFERIOR and retorno_inferior_derecho > UMBRAL_LECTURA_INFERIOR and retorno_superior_derecho > UMBRAL_LECTURA_POSTERIOR):
+                #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
+                activarActuadores(GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.LOW)
         
         
         
