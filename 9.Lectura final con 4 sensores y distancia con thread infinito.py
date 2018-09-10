@@ -7,8 +7,7 @@ import time
 import multiprocessing
 from  multiprocessing.pool import ThreadPool
 CANTIDAD_MUESTRAS = 10
-lectura_distancia_abajo = 0
-lectura_distancia_arriba = 0
+lecturas_distancia = [0, 0]
 
 
 def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin):
@@ -57,44 +56,51 @@ def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin):
     
     return resultado / CANTIDAD_MUESTRAS
 
-def readDistance(triggerpin, echopin):
+def readDistance(triggerpin, echopin, topeLectura, index):
 
-    VEL_ULTRASONIDO = 34300 #34300 cm/s
+    global lecturas_distancia
+    distance = 0
     
-    GPIO.setup(triggerpin, GPIO.OUT)
-    GPIO.setup(echopin, GPIO.IN)
-    
-    GPIO.output(triggerpin, GPIO.LOW)
-    
-    #print("esperando que el sensor se estabilice")
-    
-    #time.sleep(2)
-    
-    #print("calculando distancia")
-    
-    GPIO.output(triggerpin, GPIO.HIGH)
-    
-    time.sleep(0.00001)
-    
-    GPIO.output(triggerpin, GPIO.LOW)
-    
-    #print("por calcular el tiempo de respuesta")
-    
-    pulse_start_time = 0
-    pulse_end_time = 0
-    
-    while GPIO.input(echopin)==0:
-        pulse_start_time = time.time()
-        #print("while PIN_ECHO = 0")
-    while GPIO.input(echopin)==1:
-        pulse_end_time = time.time()
-        #print("while PIN_ECHO = 1")
-    
-    #print("tiempo de respuesta calculado")
-    
-    pulse_duration = pulse_end_time - pulse_start_time
-    distance = round(pulse_duration * VEL_ULTRASONIDO / 2, 2)
-    #print("Distance:", distance, "cm")
+    while distance <= 0 or distance > topeLectura:
+        
+        VEL_ULTRASONIDO = 34300 #34300 cm/s
+        
+        GPIO.setup(triggerpin, GPIO.OUT)
+        GPIO.setup(echopin, GPIO.IN)
+        
+        GPIO.output(triggerpin, GPIO.LOW)
+        
+        #print("esperando que el sensor se estabilice")
+        
+        #time.sleep(2)
+        
+        #print("calculando distancia")
+        
+        GPIO.output(triggerpin, GPIO.HIGH)
+        
+        time.sleep(0.00001)
+        
+        GPIO.output(triggerpin, GPIO.LOW)
+        
+        #print("por calcular el tiempo de respuesta")
+        
+        pulse_start_time = 0
+        pulse_end_time = 0
+        
+        while GPIO.input(echopin)==0:
+            pulse_start_time = time.time()
+            #print("while PIN_ECHO = 0")
+        while GPIO.input(echopin)==1:
+            pulse_end_time = time.time()
+            #print("while PIN_ECHO = 1")
+        
+        #print("tiempo de respuesta calculado")
+        
+        pulse_duration = pulse_end_time - pulse_start_time
+        distance = round(pulse_duration * VEL_ULTRASONIDO / 2, 2)
+        #print("Distance:", distance, "cm")
+        
+    lecturas_distancia[index] = distance
     
     return distance
 
@@ -155,8 +161,10 @@ GPIO.setup(VIBRADOR, GPIO.OUT)
 #Umbrales de lectura de los sensores
 UMBRAL_LECTURA_INFERIOR = 200
 UMBRAL_LECTURA_POSTERIOR = 400
-UMBRAL_LECTURA_ABAJO = 35
-UMBRAL_LECTURA_ARRIBA = 45
+UMBRAL_LECTURA_ABAJO = 10
+UMBRAL_LECTURA_ARRIBA = 10
+TOPE_LECTURA_ABAJO = 40
+TOPE_LECTURA_ARRIBA = 50
 
 #configuracion de lectura
 ultima_lectura = 0
@@ -171,16 +179,18 @@ while True:
     lectura_actual_inferior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_INFERIOR_DERECHO, SPICLK, SPIMOSI, SPIMISO, SPICS))
     lectura_actual_superior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_SUPERIOR_DERECHO, SPICLK, SPIMOSI, SPIMISO, SPICS))
     
-    lectura_distancia_abajo = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO))
-    lectura_distancia_arriba = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA))
+    lectura_distancia_abajo_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO, TOPE_LECTURA_ABAJO, 0))
+    lectura_distancia_arriba_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA, TOPE_LECTURA_ARRIBA, 1))
     
     retorno_inferior_izquierdo = lectura_actual_inferior_izquierdo.get()
     retorno_superior_izquierdo = lectura_actual_superior_izquierdo.get()
     retorno_inferior_derecho = lectura_actual_inferior_derecho.get()
     retorno_superior_derecho = lectura_actual_superior_derecho.get()
     
-    retorno_distancia_abajo = lectura_distancia_abajo.get()
-    retorno_distancia_arriba = lectura_distancia_arriba.get() 
+    #retorno_distancia_abajo = lectura_distancia_abajo_async.get()
+    #retorno_distancia_arriba = lectura_distancia_arriba_async.get()
+    retorno_distancia_abajo = lecturas_distancia[0]
+    retorno_distancia_arriba = lecturas_distancia[1]
     
 ##    print("sensor INF IZQ: ", retorno_inferior_izquierdo, " Sensor SUP IZQ: ", retorno_superior_izquierdo, " Sensor INF DER: ", retorno_inferior_derecho, " Sensor SUP DER: ", retorno_superior_derecho)
     #print("sensor sizq: ", retorno_superior_izquierdo)
@@ -295,5 +305,6 @@ while True:
 
 GPIO.cleanup()
 time.sleep(0.5)
+
 
 
