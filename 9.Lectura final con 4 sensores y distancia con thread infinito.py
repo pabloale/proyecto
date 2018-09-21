@@ -107,11 +107,11 @@ def readDistance(triggerpin, echopin, topeLectura, index):
 #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
 def activarActuadores(ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador):
     
-    GPIO.output(LED_VERDE_IZQUIERDO, ledVerdeIzq)
-    GPIO.output(LED_VERDE_DERECHO, ledVerdeDer)
-    GPIO.output(LED_ROJO_IZQUIERDO, ledRojoIzq)
-    GPIO.output(LED_ROJO_DERECHO, ledRojoDer)
-    GPIO.output(VIBRADOR, vibrador)
+    #GPIO.output(LED_VERDE_IZQUIERDO, ledVerdeIzq)
+    #GPIO.output(LED_VERDE_DERECHO, ledVerdeDer)
+    #GPIO.output(LED_ROJO_IZQUIERDO, ledRojoIzq)
+    #GPIO.output(LED_ROJO_DERECHO, ledRojoDer)
+    #GPIO.output(VIBRADOR, vibrador)
     
     return
 
@@ -121,10 +121,10 @@ pool = ThreadPool(processes=6)
 DEBUG = 1
 
 #Configuracion de pines de la placa
-SPICLK = 18 #BCM GPIO 18 // BOARD PIN 12
-SPIMISO = 23 #BCM GPIO 23 // BOARD PIN 16
-SPIMOSI = 24 #BCM GPIO 24 // BOARD PIN 18
-SPICS = 25 #BCM GPIO 25 // BOARD PIN 22
+SPICLK = 11 #BCM GPIO 11 // BOARD PIN 23
+SPIMISO = 9 #BCM GPIO 09 // BOARD PIN 21
+SPIMOSI = 10 #BCM GPIO 10 // BOARD PIN 19
+SPICS = 8 #BCM GPIO 08 // BOARD PIN 24
 
 #Pines sensor de distancia
 DISTANCE_PIN_TRIGGER_ABAJO = 4 #BCM GPIO 04 // BOARD PI0N 07
@@ -179,8 +179,8 @@ while True:
     lectura_actual_inferior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_INFERIOR_DERECHO, SPICLK, SPIMOSI, SPIMISO, SPICS))
     lectura_actual_superior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_SUPERIOR_DERECHO, SPICLK, SPIMOSI, SPIMISO, SPICS))
     
-    lectura_distancia_abajo_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO, TOPE_LECTURA_ABAJO, 0))
-    lectura_distancia_arriba_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA, TOPE_LECTURA_ARRIBA, 1))
+    #lectura_distancia_abajo_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO, TOPE_LECTURA_ABAJO, 0))
+    #lectura_distancia_arriba_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA, TOPE_LECTURA_ARRIBA, 1))
     
     retorno_inferior_izquierdo = lectura_actual_inferior_izquierdo.get()
     retorno_superior_izquierdo = lectura_actual_superior_izquierdo.get()
@@ -192,13 +192,13 @@ while True:
     retorno_distancia_abajo = lecturas_distancia[0]
     retorno_distancia_arriba = lecturas_distancia[1]
     
-##    print("sensor INF IZQ: ", retorno_inferior_izquierdo, " Sensor SUP IZQ: ", retorno_superior_izquierdo, " Sensor INF DER: ", retorno_inferior_derecho, " Sensor SUP DER: ", retorno_superior_derecho)
+    print("sensor INF IZQ: ", retorno_inferior_izquierdo, " \tSensor SUP IZQ: ", retorno_superior_izquierdo, " \tSensor INF DER: ", retorno_inferior_derecho, " \tSensor SUP DER: ", retorno_superior_derecho)
     #print("sensor sizq: ", retorno_superior_izquierdo)
     #print("sensor ider: ", retorno_inferior_derecho)
     #print("sensor sder: ", retorno_superior_derecho)
     #print("Terminaron")
-    print("distancia abajo: ", retorno_distancia_abajo)
-    print("distancia arriba: ", retorno_distancia_arriba)
+    #print("distancia abajo: ", retorno_distancia_abajo)
+    #print("distancia arriba: ", retorno_distancia_arriba)
     
     lado_izquierdo = retorno_inferior_izquierdo + retorno_superior_izquierdo
     lado_derecho = retorno_inferior_derecho + retorno_superior_derecho
