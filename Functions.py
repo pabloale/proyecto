@@ -1,13 +1,49 @@
 #!/usr/bin/python
 
+import bluetooth
 import RPi.GPIO as GPIO
 
 CANTIDAD_MUESTRAS = 10
 lecturas_distancia = [0, 0]
+lecturas_sensores = [0, 0, 0, 0]
 
-def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin):
+def moduloBluetooth():
+    
+    global lecturas_sensores
+    
+    server_socket=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+
+    port = 1
+    server_socket.bind(("",port))
+    server_socket.listen(1)
+     
+    client_socket,address = server_socket.accept()
+    print("Accepted connection from ",address)
+    while 1:
+        data = client_socket.recv(1024).decode()
+        print("Received: %s" %data)
+        print(lecturas_sensores)
+        if (data == "0"):    #if '0' is sent from the Android App
+            client_socket.send(str(lecturas_sensores[0]))
+        if (data == "1"):    #if '1' is sent from the Android App
+            client_socket.send(str(lecturas_sensores[1]))
+        if (data == "2"):    #if '2' is sent from the Android App
+            client_socket.send(str(lecturas_sensores[2]))
+        if (data == "3"):    #if '3' is sent from the Android App
+            client_socket.send(str(lecturas_sensores[3]))
+        if (data == "q"):
+            print("Quit")
+            break
+
+    client_socket.close()
+    server_socket.close()
+    
+    return
+
+def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin, index):
     
     global CANTIDAD_MUESTRAS
+    global lecturas_sensores
     h = 0
     resultado = 0
     
@@ -48,6 +84,8 @@ def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin):
         resultado = resultado + adcout
         #print("actual: ", adcnum, adcout)
         #print("total: ", adcnum, resultado)
+    
+    lecturas_sensores[index] = resultado / CANTIDAD_MUESTRAS
     
     return resultado / CANTIDAD_MUESTRAS
 
@@ -102,7 +140,7 @@ def readDistance(triggerpin, echopin, topeLectura, index):
 #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
 def activarActuadores(ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador):
     
-    print("actuadores:", ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador)
+    #print("actuadores:", ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador)
     #GPIO.output(LED_VERDE_IZQUIERDO, ledVerdeIzq)
     #GPIO.output(LED_VERDE_DERECHO, ledVerdeDer)
     #GPIO.output(LED_ROJO_IZQUIERDO, ledRojoIzq)

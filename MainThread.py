@@ -5,7 +5,7 @@ import time
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 
-from Functions import readFuerzaResist, readDistance, activarActuadores, lecturas_distancia
+from Functions import moduloBluetooth, readFuerzaResist, readDistance, activarActuadores, lecturas_distancia, lecturas_sensores
 
 #Configuracion de pines de la placa
 SPICLK = 11 #BCM GPIO 11 // BOARD PIN 23
@@ -64,29 +64,35 @@ tolerancia = 5
 pool = ThreadPool(processes=6)
 DEBUG = 1
 
+pool.apply_async(moduloBluetooth)
+
 #proceso principal
 while True:
     lectura_cambio = False
     
-    lectura_actual_inferior_izquierdo = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_INFERIOR_IZQUIERDO, SPICLK, SPIMOSI, SPIMISO, SPICS))
-    lectura_actual_superior_izquierdo = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_SUPERIOR_IZQUIERDO, SPICLK, SPIMOSI, SPIMISO, SPICS))
-    lectura_actual_inferior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_INFERIOR_DERECHO, SPICLK, SPIMOSI, SPIMISO, SPICS))
-    lectura_actual_superior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_SUPERIOR_DERECHO, SPICLK, SPIMOSI, SPIMISO, SPICS))
+    lectura_actual_inferior_izquierdo = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_INFERIOR_IZQUIERDO, SPICLK, SPIMOSI, SPIMISO, SPICS, 0))
+    lectura_actual_superior_izquierdo = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_SUPERIOR_IZQUIERDO, SPICLK, SPIMOSI, SPIMISO, SPICS, 1))
+    lectura_actual_inferior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_INFERIOR_DERECHO, SPICLK, SPIMOSI, SPIMISO, SPICS, 2))
+    lectura_actual_superior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUERZA_SUPERIOR_DERECHO, SPICLK, SPIMOSI, SPIMISO, SPICS, 3))
     
     #lectura_distancia_abajo_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO, TOPE_LECTURA_ABAJO, 0))
     #lectura_distancia_arriba_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA, TOPE_LECTURA_ARRIBA, 1))
     
-    retorno_inferior_izquierdo = lectura_actual_inferior_izquierdo.get()
-    retorno_superior_izquierdo = lectura_actual_superior_izquierdo.get()
-    retorno_inferior_derecho = lectura_actual_inferior_derecho.get()
-    retorno_superior_derecho = lectura_actual_superior_derecho.get()
+    # retorno_inferior_izquierdo = lectura_actual_inferior_izquierdo.get()
+    # retorno_superior_izquierdo = lectura_actual_superior_izquierdo.get()
+    # retorno_inferior_derecho = lectura_actual_inferior_derecho.get()
+    # retorno_superior_derecho = lectura_actual_superior_derecho.get()
+    retorno_inferior_izquierdo = lecturas_sensores[0]
+    retorno_superior_izquierdo = lecturas_sensores[1]
+    retorno_inferior_derecho = lecturas_sensores[2]
+    retorno_superior_derecho = lecturas_sensores[3]
     
     #retorno_distancia_abajo = lectura_distancia_abajo_async.get()
     #retorno_distancia_arriba = lectura_distancia_arriba_async.get()
     retorno_distancia_abajo = lecturas_distancia[0]
     retorno_distancia_arriba = lecturas_distancia[1]
     
-    print("sensor INF IZQ: ", retorno_inferior_izquierdo, " \tSensor SUP IZQ: ", retorno_superior_izquierdo, " \tSensor INF DER: ", retorno_inferior_derecho, " \tSensor SUP DER: ", retorno_superior_derecho)
+    #print("sensor INF IZQ: ", retorno_inferior_izquierdo, " \tSensor SUP IZQ: ", retorno_superior_izquierdo, " \tSensor INF DER: ", retorno_inferior_derecho, " \tSensor SUP DER: ", retorno_superior_derecho)
     #print("sensor iizq: ", retorno_inferior_izquierdo)
     #print("sensor sizq: ", retorno_superior_izquierdo)
     #print("sensor ider: ", retorno_inferior_derecho)
@@ -112,65 +118,64 @@ while True:
     #No hay nadie sentado
     if (not superior_izquierdo_activo and not inferior_izquierdo_activo and not inferior_derecho_activo and not superior_derecho_activo):
         activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.LOW, GPIO.LOW, GPIO.LOW)
+    #Hay alguien sentado
+    #Controlo la distancia de la espalda y cabeza, si se activaron esta mal sentado
+    elif (distancia_abajo_lejos or distancia_arriba_lejos):
+        activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+    #4 sensores de presion activos, está bien sentado: Activados sensores SUPERIOR e INFERIOR IZQ e INFERIOR Y SUPERIOR DER
+    elif (superior_izquierdo_activo and inferior_izquierdo_activo and inferior_derecho_activo and superior_derecho_activo):
+        activarActuadores(GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.LOW)
+    #algun sensor no esta activado, no está bien sentado
+    else:
+        activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
 
-    else: #Hay alguien sentado
+            # #1 sensor activado
+            # #Solo el sensor de SUPERIOR IZQUIERDO se activó
+            # elif (superior_izquierdo_activo and not inferior_izquierdo_activo and not inferior_derecho_activo and not superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            # #Solo el sensor de INFERIOR IZQUIERDO se activó
+            # elif (not superior_izquierdo_activo and inferior_izquierdo_activo and not inferior_derecho_activo and not superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            # #Solo el sensor de SUPERIOR DERECHO se activó
+            # elif (not superior_izquierdo_activo and not inferior_izquierdo_activo and not inferior_derecho_activo and superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            # #Solo el sensor de INFERIOR DERECHO se activó
+            # elif (not superior_izquierdo_activo and not inferior_izquierdo_activo and inferior_derecho_activo and not superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
 
-        if (distancia_abajo_lejos or distancia_arriba_lejos):
-            activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            # #2 sensores activos
+            # #Activados sensores SUPERIOR IZQ e INFERIOR IZQ
+            # elif (superior_izquierdo_activo and inferior_izquierdo_activo and not inferior_derecho_activo and not superior_derecho_activo):
+                # activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
+            # #Activados sensores INFERIOR IZQ y SUPERIOR DER
+            # elif (not superior_izquierdo_activo and inferior_izquierdo_activo and not inferior_derecho_activo and superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            # #Activados sensores INFERIOR DER Y SUPERIOR DER
+            # elif (not superior_izquierdo_activo and not inferior_izquierdo_activo and inferior_derecho_activo and superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
+            # #Activados sensores SUPERIOR IZQ y SUPERIOR DER
+            # elif (superior_izquierdo_activo and not inferior_izquierdo_activo and not inferior_derecho_activo and superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            # #Activados sensores SUPERIOR IZQ e INFERIOR DER
+            # elif (superior_izquierdo_activo and not inferior_izquierdo_activo and inferior_derecho_activo and not superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
+            # #Activados sensores INFERIOR IZQ e INFERIOR DER
+            # elif (not superior_izquierdo_activo and inferior_izquierdo_activo and inferior_derecho_activo and not superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
 
-        else:
-            #1 sensor activado
-            #Solo el sensor de SUPERIOR IZQUIERDO se activó
-            if (superior_izquierdo_activo and not inferior_izquierdo_activo and not inferior_derecho_activo and not superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-            #Solo el sensor de INFERIOR IZQUIERDO se activó
-            elif (not superior_izquierdo_activo and inferior_izquierdo_activo and not inferior_derecho_activo and not superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-            #Solo el sensor de SUPERIOR DERECHO se activó
-            elif (not superior_izquierdo_activo and not inferior_izquierdo_activo and not inferior_derecho_activo and superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-            #Solo el sensor de INFERIOR DERECHO se activó
-            elif (not superior_izquierdo_activo and not inferior_izquierdo_activo and inferior_derecho_activo and not superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-
-            #2 sensores activos
-            #Activados sensores SUPERIOR IZQ e INFERIOR IZQ
-            elif (superior_izquierdo_activo and inferior_izquierdo_activo and not inferior_derecho_activo and not superior_derecho_activo):
-                activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
-            #Activados sensores INFERIOR IZQ y SUPERIOR DER
-            elif (not superior_izquierdo_activo and inferior_izquierdo_activo and not inferior_derecho_activo and superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-            #Activados sensores INFERIOR DER Y SUPERIOR DER
-            elif (not superior_izquierdo_activo and not inferior_izquierdo_activo and inferior_derecho_activo and superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
-            #Activados sensores SUPERIOR IZQ y SUPERIOR DER
-            elif (superior_izquierdo_activo and not inferior_izquierdo_activo and not inferior_derecho_activo and superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-            #Activados sensores SUPERIOR IZQ e INFERIOR DER
-            elif (superior_izquierdo_activo and not inferior_izquierdo_activo and inferior_derecho_activo and not superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-            #Activados sensores INFERIOR IZQ e INFERIOR DER
-            elif (not superior_izquierdo_activo and inferior_izquierdo_activo and inferior_derecho_activo and not superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)
-
-            #3 sensores activos
-            #Activados sensores SUPERIOR e INFERIOR IZQ y SUPERIOR DER
-            elif (superior_izquierdo_activo and inferior_izquierdo_activo and not inferior_derecho_activo and superior_derecho_activo):
-                activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
-            #Activados sensores SUPERIOR e INFERIOR IZQ y INFERIOR DER
-            elif (superior_izquierdo_activo and inferior_izquierdo_activo and inferior_derecho_activo and not superior_derecho_activo):
-                activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
-            #Activados sensores SUPERIOR IZQ e INFERIOR Y SUPERIOR DER
-            elif (superior_izquierdo_activo and not inferior_izquierdo_activo and inferior_derecho_activo and superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
-            #Activados sensores INFERIOR IZQ e INFERIOR Y SUPERIOR DER
-            elif (not superior_izquierdo_activo and inferior_izquierdo_activo and inferior_derecho_activo and superior_derecho_activo):
-                activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
-
-            #4 sensores activos
-            #Activados sensores SUPERIOR e INFERIOR IZQ e INFERIOR Y SUPERIOR DER
-            elif (superior_izquierdo_activo and inferior_izquierdo_activo and inferior_derecho_activo and superior_derecho_activo):
-                activarActuadores(GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.LOW)
+            # #3 sensores activos
+            # #Activados sensores SUPERIOR e INFERIOR IZQ y SUPERIOR DER
+            # elif (superior_izquierdo_activo and inferior_izquierdo_activo and not inferior_derecho_activo and superior_derecho_activo):
+                # activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
+            # #Activados sensores SUPERIOR e INFERIOR IZQ y INFERIOR DER
+            # elif (superior_izquierdo_activo and inferior_izquierdo_activo and inferior_derecho_activo and not superior_derecho_activo):
+                # activarActuadores(GPIO.HIGH, GPIO.LOW, GPIO.LOW, GPIO.HIGH, GPIO.HIGH)
+            # #Activados sensores SUPERIOR IZQ e INFERIOR Y SUPERIOR DER
+            # elif (superior_izquierdo_activo and not inferior_izquierdo_activo and inferior_derecho_activo and superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
+            # #Activados sensores INFERIOR IZQ e INFERIOR Y SUPERIOR DER
+            # elif (not superior_izquierdo_activo and inferior_izquierdo_activo and inferior_derecho_activo and superior_derecho_activo):
+                # activarActuadores(GPIO.LOW, GPIO.HIGH, GPIO.HIGH, GPIO.LOW, GPIO.HIGH)
         
         
         
