@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from datetime import datetime
+from collections import deque
 
 class DataSensores:
 
@@ -78,4 +79,17 @@ class DataSensores:
     
     def concatenarData(self):
         return 'data procesada en forma de string'
+
+
+
+class DataSensoresCollection:
     
+    def __init__(self, dataSensores):
+        self.queue = deque([dataSensores])
+    
+    def append(self, dataSensores):
+        self.queue.append(dataSensores)
+    
+    def popleft(self):
+        return self.queue.popleft()
+
