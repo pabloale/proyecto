@@ -140,7 +140,7 @@ def readDistance(triggerpin, echopin, topeLectura, index):
 #LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
 def activarActuadores(ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador):
     
-    #print("actuadores:", ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador)
+    print("actuadores:", ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador)
     #GPIO.output(LED_VERDE_IZQUIERDO, ledVerdeIzq)
     #GPIO.output(LED_VERDE_DERECHO, ledVerdeDer)
     #GPIO.output(LED_ROJO_IZQUIERDO, ledRojoIzq)
