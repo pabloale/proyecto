@@ -1,0 +1,23 @@
+paq {
+
+	id: <num>
+	datetime: <datetime>
+	sensores: {
+		sensorFuerzaIzqAdelan: <num>
+		sensorFuerzaIzqAtras: <num>
+		sensorFuerzaDerAdelan: <num>
+		sensorFuerzaDerAtras: <num>
+		sensorDistanciaAbajo: <num>
+		sensorDistanciaArriba: <num>
+	}
+	Actuadores: {
+		ActuadorLedVerde: <bool>
+		ActuadorLedRojo: <bool>
+		ActuadorVibrador: <bool>
+	}
+	Config: {
+		EstadoActuadorLed: <bool>
+		EstadoActuadorVibra: <bool>
+		Peso: <string>
+	}
+}
