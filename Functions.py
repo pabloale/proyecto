@@ -3,13 +3,17 @@
 import bluetooth
 import RPi.GPIO as GPIO
 
+from Classes import DataSensores, DataSensoresCollection
+
 CANTIDAD_MUESTRAS = 10
 lecturas_distancia = [0, 0]
 lecturas_sensores = [0, 0, 0, 0]
+dataSensoresCollection = DataSensoresCollection(DataSensores(0, 0, 0, 0, 0, 0))
 
 def moduloBluetooth():
     
     global lecturas_sensores
+    global dataSensoresCollection
     
     server_socket=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
 
@@ -20,17 +24,17 @@ def moduloBluetooth():
     client_socket,address = server_socket.accept()
     print("Accepted connection from ",address)
     while 1:
+        dataSensores = dataSensoresCollection.popleft()
+        dataSensores.imprimirData()
+        print(dataSensores.concatenarData())
+        client_socket.send(dataSensores.concatenarData())
+        #print(lecturas_sensores)
         data = client_socket.recv(1024).decode()
-        print("Received: %s" %data)
-        print(lecturas_sensores)
-        if (data == "0"):    #if '0' is sent from the Android App
-            client_socket.send(str(lecturas_sensores[0]))
-        if (data == "1"):    #if '1' is sent from the Android App
-            client_socket.send(str(lecturas_sensores[1]))
-        if (data == "2"):    #if '2' is sent from the Android App
-            client_socket.send(str(lecturas_sensores[2]))
-        if (data == "3"):    #if '3' is sent from the Android App
-            client_socket.send(str(lecturas_sensores[3]))
+        #print("Received: %s" %data)
+        if (data == "c"):
+            data = client_socket.recv(1024).decode()
+            configData = data.split(';')
+            print(data, " && ", configData)
         if (data == "q"):
             print("Quit")
             break
@@ -137,15 +141,17 @@ def readDistance(triggerpin, echopin, topeLectura, index):
     
     return distance
 
-#LED_VERDE_IZQUIERDO - LED_VERDE_DERECHO - LED_ROJO_IZQUIERDO - LED_ROJO_DERECHO - VIBRADOR
-def activarActuadores(ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador):
+#LED_VERDE_IZQ - LED_VERDE_DER - LED_ROJO_IZQ - LED_ROJO_DER - VIBRADOR
+def activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, configActVibr, configActLed, verdeActivo, rojoActivo):
     
-    print("actuadores:", ledVerdeIzq, ledVerdeDer, ledRojoIzq, ledRojoDer, vibrador)
-    #GPIO.output(LED_VERDE_IZQUIERDO, ledVerdeIzq)
-    #GPIO.output(LED_VERDE_DERECHO, ledVerdeDer)
-    #GPIO.output(LED_ROJO_IZQUIERDO, ledRojoIzq)
-    #GPIO.output(LED_ROJO_DERECHO, ledRojoDer)
-    #GPIO.output(VIBRADOR, vibrador)
+    #print("actuadores:", verdeActivo, rojoActivo)
+    if (configActLed):
+        GPIO.output(LED_VERDE_IZQ, verdeActivo)
+        GPIO.output(LED_VERDE_DER, verdeActivo)
+        GPIO.output(LED_ROJO_IZQ, rojoActivo)
+        GPIO.output(LED_ROJO_DER, rojoActivo)
+    if (configActVibr):
+        GPIO.output(VIBRADOR, rojoActivo)
     
     return
 

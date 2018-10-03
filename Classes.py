@@ -44,29 +44,60 @@ class DataSensores:
         self.sensorPresionDerAtras = sensorPresionDerAtras
         self.sensorDistanciaAbajo = sensorDistanciaAbajo
         self.sensorDistanciaArriba = sensorDistanciaArriba
+        
+        self.configActuadorVibrador = False
+        self.configActuadorLuces = False
+        self.configPeso = 65
+        
+        self.configUmbrales()
+        
+        self.lado_izquierdo = self.sensorPresionIzqAdelante + self.sensorPresionIzqAtras
+        self.lado_derecho = self.sensorPresionDerAdelante + self.sensorPresionDerAtras
+        
+        self.izqAtrasActivo = self.sensorPresionIzqAtras > self.UMBRAL_LECTURA_ATRAS
+        self.izqAdelanteActivo = self.sensorPresionIzqAdelante > self.UMBRAL_LECTURA_ADELANTE
+        self.derAtrasActivo = self.sensorPresionDerAtras > self.UMBRAL_LECTURA_ATRAS
+        self.derAdelanteActivo = self.sensorPresionDerAdelante > self.UMBRAL_LECTURA_ADELANTE
+
+        self.ladoIzqActivo = (self.izqAtrasActivo or self.izqAdelanteActivo) and not self.derAtrasActivo and not self.derAdelanteActivo
+        self.ladoDerActivo = (self.derAtrasActivo or self.derAdelanteActivo) and not self.izqAtrasActivo and not self.izqAdelanteActivo
+        
+        self.distAbajoLejos = self.sensorDistanciaAbajo > self.UMBRAL_LECTURA_ABAJO
+        self.distArribaLejos = self.sensorDistanciaArriba > self.UMBRAL_LECTURA_ARRIBA
     
-    def configUmbrales(self, umbralSensoresAdelante, umbralSensoresAtras, umbralSensorAbajo, umbralSensorArriba):
-        self.UMBRAL_LECTURA_ADELANTE = umbralSensoresAdelante
-        self.UMBRAL_LECTURA_ATRAS = umbralSensoresAtras
-        self.UMBRAL_LECTURA_ABAJO = umbralSensorAbajo
-        self.UMBRAL_LECTURA_ARRIBA = umbralSensorArriba
+    
+    def configUmbrales(self):
+        if (self.configPeso <= 50):
+            self.UMBRAL_LECTURA_ADELANTE = 100
+            self.UMBRAL_LECTURA_ATRAS = 200
+            self.UMBRAL_LECTURA_ABAJO = 20
+            self.UMBRAL_LECTURA_ARRIBA = 20
+        elif (self.configPeso > 50 and self.configPeso <= 70):
+            self.UMBRAL_LECTURA_ADELANTE = 150
+            self.UMBRAL_LECTURA_ATRAS = 300
+            self.UMBRAL_LECTURA_ABAJO = 15
+            self.UMBRAL_LECTURA_ARRIBA = 15
+        elif (self.configPeso > 70 and self.configPeso <= 90):
+            self.UMBRAL_LECTURA_ADELANTE = 200
+            self.UMBRAL_LECTURA_ATRAS = 400
+            self.UMBRAL_LECTURA_ABAJO = 10
+            self.UMBRAL_LECTURA_ARRIBA = 10
+        elif (self.configPeso > 90):
+            self.UMBRAL_LECTURA_ADELANTE = 250
+            self.UMBRAL_LECTURA_ATRAS = 500
+            self.UMBRAL_LECTURA_ABAJO = 7
+            self.UMBRAL_LECTURA_ARRIBA = 7
     
     def configActuadores(self, configActuadorVibrador, configActuadorLuces, configPeso):
         self.configActuadorVibrador = configActuadorVibrador
         self.configActuadorLuces = configActuadorLuces
         self.configPeso = configPeso
     
-    def procesarDatos(self):
-        self.lado_izquierdo = self.sensorPresionIzqAdelante + self.sensorPresionIzqAtras
-        self.lado_derecho = self.sensorPresionDerAdelante + self.sensorPresionDerAtras
-        
-        self.izqAtrasActivo = self.sensorPresionIzqAtras > self.UMBRAL_LECTURA_ATRAS
-        self.izqAdelanteActivo = self.sensorPresionIzqAdelante > self.UMBRAL_LECTURA_ADELANTE
-        self.derAdelanteActivo = self.sensorPresionDerAdelante > self.UMBRAL_LECTURA_ADELANTE
-        self.derAtrasActivo = self.sensorPresionDerAtras > self.UMBRAL_LECTURA_ATRAS
-
-        self.distAbajoLejos = self.sensorDistanciaAbajo > self.UMBRAL_LECTURA_ABAJO
-        self.distArribaLejos = self.sensorDistanciaArriba > self.UMBRAL_LECTURA_ARRIBA
+    def getConfigActuadorVibrador(self):
+        return self.configActuadorVibrador
+    
+    def getConfigActuadorLed(self):
+        return self.configActuadorLuces
     
     #No hay nadie sentado
     def noHayNadieSentado(self):
@@ -81,11 +112,24 @@ class DataSensores:
         return not self.lejosRespaldo() and self.izqAtrasActivo and self.izqAdelanteActivo and self.derAdelanteActivo and self.derAtrasActivo
     
     def imprimirData(self):
-        print("sensor ATRAS IZQ: ", self.sensorPresionIzqAtras, " \tSensor ADELA IZQ: ", self.sensorPresionIzqAdelante, " \tSensor ATRAS DER: ", self.sensorPresionDerAtras, " \tSensor ADELA DER: ", self.sensorPresionDerAdelante)
+        data = "ATRAS IZQ: " + str(self.sensorPresionIzqAtras) + "\t"
+        data = data + "ATRAS DER: " + str(self.sensorPresionDerAtras) + "\t"
+        data = data + "ADELA IZQ: " + str(self.sensorPresionIzqAdelante) + "\t"
+        data = data + "ADELA DER: " + str(self.sensorPresionDerAdelante) + "\t"
+        data = data + "ARRIBA: " + str(self.sensorDistanciaAbajo) + "\t"
+        data = data + "ABAJO: " + str(self.sensorDistanciaArriba)
+        print(data)
     
     def concatenarData(self):
-        return str(self.fecha) + ";" + str(self.sensorPresionIzqAtras) + ";" + str(self.sensorPresionIzqAdelante) + ";" + str(self.lado_izquierdo) + ";" + str(self.sensorPresionDerAdelante) + ";" + str(self.sensorPresionDerAtras) + ";" + str(self.lado_derecho) + ";" + str(self.sensorDistanciaAbajo) + ";" + str(self.sensorDistanciaArriba)
-
+        ##Fecha<DateTime>;
+        ##SensorResAtrasIzq<float(8,4)>;SensorResAtrasDer<float(8,4)>;SensorResAdantIzq<float(8,4)>;SensorResAdantDer<float(8,4)>;
+        ##SensorDistAbajo<float(8,4)>;SensorDistArriba<float(8,4)>;
+        ##bienSentado<bool>;sentadoMalIzq<bool>;sentadoMalDer<bool>;sentadoLejosAbajo<bool>;sentadoLejosArriba<bool>
+        stringRetorno = str(self.fecha) + ";"
+        stringRetorno = stringRetorno + str(self.sensorPresionIzqAtras) + ";" + str(self.sensorPresionDerAtras) + ";" + str(self.sensorPresionIzqAdelante) + ";" + str(self.sensorPresionDerAdelante) + ";"
+        stringRetorno = stringRetorno + str(self.sensorDistanciaAbajo) + ";" + str(self.sensorDistanciaArriba) + ";"
+        stringRetorno = stringRetorno + str(self.bienSentado()) + ";" + str(self.ladoIzqActivo) + ";" + str(self.ladoDerActivo) + ";" + str(self.distAbajoLejos) + ";" + str(self.distArribaLejos)
+        return stringRetorno
 
 
 class DataSensoresCollection:
