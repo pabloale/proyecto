@@ -1,17 +1,22 @@
 #!/usr/bin/python
 
+import time
 import bluetooth
 import RPi.GPIO as GPIO
 
 from Classes import DataSensores, DataSensoresCollection
 
-CANTIDAD_MUESTRAS = 10
+CANT_MUESTRAS_SENSOR_DIST = 10
+MAX_LENGTH_COLA = 1000
+TIEMPO_ENTRE_ENVIOS_BLUE = 0.5
+
 lecturas_distancia = [0, 0]
 lecturas_sensores = [0, 0, 0, 0]
-dataSensoresCollection = DataSensoresCollection(DataSensores(0, 0, 0, 0, 0, 0))
+dataSensoresCollection = DataSensoresCollection(MAX_LENGTH_COLA)
 
 def moduloBluetooth():
     
+    global TIEMPO_ENTRE_ENVIOS_BLUE
     global lecturas_sensores
     global dataSensoresCollection
     
@@ -25,9 +30,12 @@ def moduloBluetooth():
     print("Accepted connection from ",address)
     while 1:
         dataSensores = dataSensoresCollection.popleft()
-        dataSensores.imprimirData()
-        print(dataSensores.concatenarData())
-        client_socket.send(dataSensores.concatenarData())
+        if (dataSensores is not None):
+            dataSensores.imprimirData()
+            print(dataSensores.concatenarData())
+            client_socket.send(dataSensores.concatenarData())
+        else:
+            client_socket.send("")
         #print(lecturas_sensores)
         data = client_socket.recv(1024).decode()
         #print("Received: %s" %data)
@@ -38,6 +46,7 @@ def moduloBluetooth():
         if (data == "q"):
             print("Quit")
             break
+        time.sleep(TIEMPO_ENTRE_ENVIOS_BLUE)
 
     client_socket.close()
     server_socket.close()
@@ -46,12 +55,12 @@ def moduloBluetooth():
 
 def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin, index):
     
-    global CANTIDAD_MUESTRAS
+    global CANT_MUESTRAS_SENSOR_DIST
     global lecturas_sensores
     h = 0
     resultado = 0
     
-    while (h < CANTIDAD_MUESTRAS):
+    while (h < CANT_MUESTRAS_SENSOR_DIST):
         if ((adcnum > 7) or (adcnum < 0)):
             return -1
         GPIO.output(cspin, True)
@@ -89,9 +98,9 @@ def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin, index):
         #print("actual: ", adcnum, adcout)
         #print("total: ", adcnum, resultado)
     
-    lecturas_sensores[index] = resultado / CANTIDAD_MUESTRAS
+    lecturas_sensores[index] = resultado / CANT_MUESTRAS_SENSOR_DIST
     
-    return resultado / CANTIDAD_MUESTRAS
+    return resultado / CANT_MUESTRAS_SENSOR_DIST
 
 def readDistance(triggerpin, echopin, topeLectura, index):
 

@@ -58,7 +58,7 @@ ultima_lectura = 0
 tolerancia = 5
 
 #Configuracion de threads
-pool = ThreadPool(processes=6)
+pool = ThreadPool(processes=7)
 DEBUG = 1
 
 pool.apply_async(moduloBluetooth)
@@ -89,7 +89,7 @@ while True:
     retorno_distancia_abajo = lecturas_distancia[0]
     retorno_distancia_arriba = lecturas_distancia[1]
     
-    dataSensores = DataSensores(retorno_inferior_izquierdo, retorno_superior_izquierdo, retorno_inferior_derecho, retorno_superior_derecho, retorno_distancia_abajo, retorno_distancia_arriba)
+    dataSensores = DataSensores(retorno_superior_izquierdo, retorno_superior_derecho, retorno_inferior_izquierdo, retorno_inferior_derecho, retorno_distancia_abajo, retorno_distancia_arriba)
     
     #dataSensores.imprimirData()
     

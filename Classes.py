@@ -35,13 +35,13 @@ class DataSensores:
     # distAbajoLejos
     # distArribaLejos
     
-    def __init__(self, sensorPresionIzqAdelante, sensorPresionIzqAtras, sensorPresionDerAdelante, sensorPresionDerAtras, sensorDistanciaAbajo, sensorDistanciaArriba):
+    def __init__(self, sensorPresionIzqAtras, sensorPresionDerAtras, sensorPresionIzqAdelante, sensorPresionDerAdelante, sensorDistanciaAbajo, sensorDistanciaArriba):
         self.fecha = datetime.now()
         
-        self.sensorPresionIzqAdelante = sensorPresionIzqAdelante
         self.sensorPresionIzqAtras = sensorPresionIzqAtras
-        self.sensorPresionDerAdelante = sensorPresionDerAdelante
         self.sensorPresionDerAtras = sensorPresionDerAtras
+        self.sensorPresionIzqAdelante = sensorPresionIzqAdelante
+        self.sensorPresionDerAdelante = sensorPresionDerAdelante
         self.sensorDistanciaAbajo = sensorDistanciaAbajo
         self.sensorDistanciaArriba = sensorDistanciaArriba
         
@@ -55,8 +55,8 @@ class DataSensores:
         self.lado_derecho = self.sensorPresionDerAdelante + self.sensorPresionDerAtras
         
         self.izqAtrasActivo = self.sensorPresionIzqAtras > self.UMBRAL_LECTURA_ATRAS
-        self.izqAdelanteActivo = self.sensorPresionIzqAdelante > self.UMBRAL_LECTURA_ADELANTE
         self.derAtrasActivo = self.sensorPresionDerAtras > self.UMBRAL_LECTURA_ATRAS
+        self.izqAdelanteActivo = self.sensorPresionIzqAdelante > self.UMBRAL_LECTURA_ADELANTE
         self.derAdelanteActivo = self.sensorPresionDerAdelante > self.UMBRAL_LECTURA_ADELANTE
 
         self.ladoIzqActivo = (self.izqAtrasActivo or self.izqAdelanteActivo) and not self.derAtrasActivo and not self.derAdelanteActivo
@@ -64,8 +64,7 @@ class DataSensores:
         
         self.distAbajoLejos = self.sensorDistanciaAbajo > self.UMBRAL_LECTURA_ABAJO
         self.distArribaLejos = self.sensorDistanciaArriba > self.UMBRAL_LECTURA_ARRIBA
-    
-    
+
     def configUmbrales(self):
         if (self.configPeso <= 50):
             self.UMBRAL_LECTURA_ADELANTE = 100
@@ -116,8 +115,8 @@ class DataSensores:
         data = data + "ATRAS DER: " + str(self.sensorPresionDerAtras) + "\t"
         data = data + "ADELA IZQ: " + str(self.sensorPresionIzqAdelante) + "\t"
         data = data + "ADELA DER: " + str(self.sensorPresionDerAdelante) + "\t"
-        data = data + "ARRIBA: " + str(self.sensorDistanciaAbajo) + "\t"
-        data = data + "ABAJO: " + str(self.sensorDistanciaArriba)
+        data = data + "ABAJO: " + str(self.sensorDistanciaAbajo) + "\t"
+        data = data + "ARRIBA: " + str(self.sensorDistanciaArriba)
         print(data)
     
     def concatenarData(self):
@@ -134,12 +133,16 @@ class DataSensores:
 
 class DataSensoresCollection:
     
-    def __init__(self, dataSensores):
-        self.queue = deque([dataSensores])
+    def __init__(self, maxLength):
+        self.queue = deque([], maxLength)
     
     def append(self, dataSensores):
         self.queue.append(dataSensores)
     
     def popleft(self):
-        return self.queue.popleft()
+        if (self.len() != 0):
+            return self.queue.popleft()
+
+    def len(self):
+        return len(self.queue)
 
