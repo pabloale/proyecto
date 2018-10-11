@@ -37,12 +37,14 @@ def moduloBluetooth():
         else:
             client_socket.send("")
         #print(lecturas_sensores)
-        data = client_socket.recv(1024).decode()
-        #print("Received: %s" %data)
-        if (data == "c"):
+        data = client_socket.recv(2).decode()
+        print("Received: %s" %data)
+        if (data == "CF"):
             data = client_socket.recv(1024).decode()
+            ##confActuadorLed<bool>;confActuadorVibracion<bool>;peso<int>
             configData = data.split(';')
-            print(data, " && ", configData)
+            print("Paq config: ", data, " && ", configData)
+            dataSensoresCollection.setConfig(DataConfigActuadores(configData[0], configData[1], configData[2]))
         if (data == "q"):
             print("Quit")
             break

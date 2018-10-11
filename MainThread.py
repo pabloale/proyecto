@@ -89,7 +89,7 @@ while True:
     retorno_distancia_abajo = lecturas_distancia[0]
     retorno_distancia_arriba = lecturas_distancia[1]
     
-    dataSensores = DataSensores(retorno_superior_izquierdo, retorno_superior_derecho, retorno_inferior_izquierdo, retorno_inferior_derecho, retorno_distancia_abajo, retorno_distancia_arriba)
+    dataSensores = DataSensores(retorno_superior_izquierdo, retorno_superior_derecho, retorno_inferior_izquierdo, retorno_inferior_derecho, retorno_distancia_abajo, retorno_distancia_arriba, dataSensoresCollection.getConfig().getPeso())
     
     #dataSensores.imprimirData()
     

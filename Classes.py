@@ -11,31 +11,8 @@ class DataSensores:
     UMBRAL_LECTURA_ABAJO = 10
     UMBRAL_LECTURA_ARRIBA = 10
     
-    # fecha
     
-    # sensorPresionIzqAdelante
-    # sensorPresionIzqAtras
-    # sensorPresionDerAdelante
-    # sensorPresionDerAtras
-    # sensorDistanciaAbajo
-    # sensorDistanciaArriba
-    
-    # actuadorVibrador
-    # actuadorLuces
-    
-    # configActuadorVibrador
-    # configActuadorLuces
-    # configPeso
-    
-    # izqAtrasActivo
-    # izqAdelanteActivo
-    # derAdelanteActivo
-    # derAtrasActivo
-    
-    # distAbajoLejos
-    # distArribaLejos
-    
-    def __init__(self, sensorPresionIzqAtras, sensorPresionDerAtras, sensorPresionIzqAdelante, sensorPresionDerAdelante, sensorDistanciaAbajo, sensorDistanciaArriba):
+    def __init__(self, sensorPresionIzqAtras, sensorPresionDerAtras, sensorPresionIzqAdelante, sensorPresionDerAdelante, sensorDistanciaAbajo, sensorDistanciaArriba, peso):
         self.fecha = datetime.now()
         
         self.sensorPresionIzqAtras = sensorPresionIzqAtras
@@ -45,11 +22,7 @@ class DataSensores:
         self.sensorDistanciaAbajo = sensorDistanciaAbajo
         self.sensorDistanciaArriba = sensorDistanciaArriba
         
-        self.configActuadorVibrador = False
-        self.configActuadorLuces = False
-        self.configPeso = 65
-        
-        self.configUmbrales()
+        self.configUmbrales(peso)
         
         self.lado_izquierdo = self.sensorPresionIzqAdelante + self.sensorPresionIzqAtras
         self.lado_derecho = self.sensorPresionDerAdelante + self.sensorPresionDerAtras
@@ -65,38 +38,27 @@ class DataSensores:
         self.distAbajoLejos = self.sensorDistanciaAbajo > self.UMBRAL_LECTURA_ABAJO
         self.distArribaLejos = self.sensorDistanciaArriba > self.UMBRAL_LECTURA_ARRIBA
 
-    def configUmbrales(self):
-        if (self.configPeso <= 50):
+    def configUmbrales(self, peso):
+        if (peso <= 50):
             self.UMBRAL_LECTURA_ADELANTE = 100
             self.UMBRAL_LECTURA_ATRAS = 200
             self.UMBRAL_LECTURA_ABAJO = 20
             self.UMBRAL_LECTURA_ARRIBA = 20
-        elif (self.configPeso > 50 and self.configPeso <= 70):
+        elif (peso > 50 and peso <= 70):
             self.UMBRAL_LECTURA_ADELANTE = 150
             self.UMBRAL_LECTURA_ATRAS = 300
             self.UMBRAL_LECTURA_ABAJO = 15
             self.UMBRAL_LECTURA_ARRIBA = 15
-        elif (self.configPeso > 70 and self.configPeso <= 90):
+        elif (peso > 70 and peso <= 90):
             self.UMBRAL_LECTURA_ADELANTE = 200
             self.UMBRAL_LECTURA_ATRAS = 400
             self.UMBRAL_LECTURA_ABAJO = 10
             self.UMBRAL_LECTURA_ARRIBA = 10
-        elif (self.configPeso > 90):
+        elif (peso > 90):
             self.UMBRAL_LECTURA_ADELANTE = 250
             self.UMBRAL_LECTURA_ATRAS = 500
             self.UMBRAL_LECTURA_ABAJO = 7
             self.UMBRAL_LECTURA_ARRIBA = 7
-    
-    def configActuadores(self, configActuadorVibrador, configActuadorLuces, configPeso):
-        self.configActuadorVibrador = configActuadorVibrador
-        self.configActuadorLuces = configActuadorLuces
-        self.configPeso = configPeso
-    
-    def getConfigActuadorVibrador(self):
-        return self.configActuadorVibrador
-    
-    def getConfigActuadorLed(self):
-        return self.configActuadorLuces
     
     #No hay nadie sentado
     def noHayNadieSentado(self):
@@ -131,10 +93,28 @@ class DataSensores:
         return stringRetorno
 
 
+class DataConfigActuadores:
+
+    def __init__(self, configActuadorLed, configActuadorVibrador, configPeso):
+        self.configActuadorLed = configActuadorLed
+        self.configActuadorVibrador = configActuadorVibrador
+        self.configPeso = configPeso
+
+    def getConfigActuadorLed(self):
+        return self.configActuadorLed
+
+    def getConfigActuadorVibrador(self):
+        return self.configActuadorVibrador
+    
+    def getPeso(self):
+        return self.configPeso
+
+
 class DataSensoresCollection:
     
     def __init__(self, maxLength):
         self.queue = deque([], maxLength)
+        self.dataConfig = DataConfigActuadores(False, False, 65)
     
     def append(self, dataSensores):
         self.queue.append(dataSensores)
@@ -145,4 +125,10 @@ class DataSensoresCollection:
 
     def len(self):
         return len(self.queue)
+
+    def getConfig(self):
+        return self.dataConfig
+
+    def setConfig(self, dataConfigActuadores):
+        self.dataConfig = dataConfigActuadores
 
