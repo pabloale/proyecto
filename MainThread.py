@@ -8,7 +8,7 @@ import multiprocessing
 from multiprocessing.pool import ThreadPool
 
 from Classes import DataSensores
-from Functions import moduloBluetooth, readFuerzaResist, readDistance, activarActuadores, lecturas_distancia, lecturas_sensores, dataSensoresCollection
+from Functions import moduloBluetooth, readFuerzaResist, readDistance, activarActuadores, lecturas_distancia, lecturas_sensores, dataSensoresCollection, TIEMPO_ENTRE_LECTURAS_ENVIOS
 
 def close(signal, frame):
     print("\nLimpiando la configuracion de pines...\n")
@@ -115,9 +115,6 @@ while True:
         
         activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, dataSensoresCollection.getConfig().getConfigActuadorVibrador(), dataSensoresCollection.getConfig().getConfigActuadorLed(), GPIO.LOW, GPIO.HIGH)
     
-    time.sleep(0.5)
-
-GPIO.cleanup()
-time.sleep(0.5)
+    time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
 
 

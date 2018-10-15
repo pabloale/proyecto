@@ -8,7 +8,7 @@ from Classes import DataSensores, DataSensoresCollection
 
 CANT_MUESTRAS_SENSOR_DIST = 10
 MAX_LENGTH_COLA = 1000
-TIEMPO_ENTRE_ENVIOS_BLUE = 0.5
+TIEMPO_ENTRE_LECTURAS_ENVIOS = 0.5
 
 lecturas_distancia = [0, 0]
 lecturas_sensores = [0, 0, 0, 0]
@@ -16,7 +16,7 @@ dataSensoresCollection = DataSensoresCollection(MAX_LENGTH_COLA)
 
 def moduloBluetooth():
     
-    global TIEMPO_ENTRE_ENVIOS_BLUE
+    global TIEMPO_ENTRE_LECTURAS_ENVIOS
     global lecturas_sensores
     global dataSensoresCollection
     
@@ -28,7 +28,7 @@ def moduloBluetooth():
      
     client_socket,address = server_socket.accept()
     print("Accepted connection from ",address)
-    while 1:
+    while True:
         dataSensores = dataSensoresCollection.popleft()
         if (dataSensores is not None):
             dataSensores.imprimirData()
@@ -48,7 +48,7 @@ def moduloBluetooth():
         if (data == "q"):
             print("Quit")
             break
-        time.sleep(TIEMPO_ENTRE_ENVIOS_BLUE)
+        time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
 
     client_socket.close()
     server_socket.close()
@@ -58,7 +58,7 @@ def moduloBluetooth():
 def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin, index):
     
     global CANT_MUESTRAS_SENSOR_DIST
-    global TIEMPO_ENTRE_ENVIOS_BLUE
+    global TIEMPO_ENTRE_LECTURAS_ENVIOS
     global lecturas_sensores
 
     while True:
@@ -103,13 +103,13 @@ def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin, index):
             #print("total: ", adcnum, resultado)
         
         lecturas_sensores[index] = resultado / CANT_MUESTRAS_SENSOR_DIST
-        time.sleep(TIEMPO_ENTRE_ENVIOS_BLUE)
+        time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
     
     return resultado / CANT_MUESTRAS_SENSOR_DIST
 
 def readDistance(triggerpin, echopin, topeLectura, index):
 
-    global TIEMPO_ENTRE_ENVIOS_BLUE
+    global TIEMPO_ENTRE_LECTURAS_ENVIOS
     global lecturas_distancia
     distance = 0
     
@@ -155,12 +155,12 @@ def readDistance(triggerpin, echopin, topeLectura, index):
             # multiply with the sonic speed (34300 cm/s) and divide by 2, because there and back
             distance = round(pulse_duration * VEL_ULTRASONIDO / 2, 2)
             #print("Distance de ", index, ": ", distance, "cm")
-            time.sleep(TIEMPO_ENTRE_ENVIOS_BLUE/2)
+            time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS/2)
         
         #print("seteo distancia", index)
         lecturas_distancia[index] = distance
         #print("sleep", index)
-        time.sleep(TIEMPO_ENTRE_ENVIOS_BLUE)
+        time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
         #print("fin sleep", index)
     
     return distance
