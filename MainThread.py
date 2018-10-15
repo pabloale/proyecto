@@ -121,4 +121,3 @@ GPIO.cleanup()
 time.sleep(0.5)
 
 
-
