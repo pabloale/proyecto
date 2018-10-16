@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import time
+import select
 import bluetooth
 import RPi.GPIO as GPIO
 
@@ -13,44 +14,87 @@ TIEMPO_ENTRE_LECTURAS_ENVIOS = 0.5
 lecturas_distancia = [0, 0]
 lecturas_sensores = [0, 0, 0, 0]
 dataSensoresCollection = DataSensoresCollection(MAX_LENGTH_COLA)
+BLUE_DISCONNECTED = 0
+BLUE_CONNECTED = 1
+BLUE_QUIT = 2
+ESTADO_BLUETOOTH = BLUE_DISCONNECTED
 
 def moduloBluetooth():
     
     global TIEMPO_ENTRE_LECTURAS_ENVIOS
-    global lecturas_sensores
     global dataSensoresCollection
+    global ESTADO_BLUETOOTH, BLUE_CONNECTED, BLUE_DISCONNECTED, BLUE_QUIT
     
-    server_socket=bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+    server_socket = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
 
+    #server_socket.setblocking(0)
     port = 1
     server_socket.bind(("",port))
     server_socket.listen(1)
-     
-    client_socket,address = server_socket.accept()
-    print("Accepted connection from ",address)
-    while True:
-        dataSensores = dataSensoresCollection.popleft()
-        if (dataSensores is not None):
-            dataSensores.imprimirData()
-            print(dataSensores.concatenarData())
-            client_socket.send(dataSensores.concatenarData())
-        else:
-            client_socket.send("")
-        #print(lecturas_sensores)
-        data = client_socket.recv(2).decode()
-        print("Received: %s" %data)
-        if (data == "CF"):
-            data = client_socket.recv(1024).decode()
-            ##confActuadorLed<bool>;confActuadorVibracion<bool>;peso<int>
-            configData = data.split(';')
-            print("Paq config: ", data, " && ", configData)
-            dataSensoresCollection.setConfig(DataConfigActuadores(configData[0], configData[1], configData[2]))
-        if (data == "q"):
-            print("Quit")
-            break
-        time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
+    
+    while ESTADO_BLUETOOTH is not BLUE_QUIT:
+        print("esperando coneccion..")
+        client_socket,address = server_socket.accept()
+        client_socket.setblocking(0)
+        print("Aceptada coneccion de ", address)
+        ESTADO_BLUETOOTH = BLUE_CONNECTED
+        
+        while ESTADO_BLUETOOTH == BLUE_CONNECTED:
+            try:
+                readable, writable, exceptional = select.select([client_socket], [client_socket], [client_socket], 3)
+                if len(writable) > 0:
+                    # connection established, send some stuff
+                    try:
+                        dataSensores = dataSensoresCollection.popleft()
+                        if (dataSensores is not None):
+                            #dataSensores.imprimirData()
+                            #print(dataSensores.concatenarData())
+                            writable[0].send(dataSensores.concatenarData())
+                        else:
+                            writable[0].send("")
+                    except bluetooth.BluetoothError as e:
+                        print("Error coneccion SEND")
+                        ESTADO_BLUETOOTH = BLUE_DISCONNECTED
+                        break
 
-    client_socket.close()
+                if len(readable) > 0:
+                    data = readable[0].recv(2)
+                    if data:
+                        data = data.decode()
+                        print("Recibido: %s" %data)
+                        if (data == "CF"):
+                            data = readable[0].recv(1024).decode()
+                            ##confActuadorLed<bool>;confActuadorVibracion<bool>;peso<int>
+                            configData = data.split(';')
+                            print("Paq config: ", data, " && ", configData)
+                            dataSensoresCollection.setConfig(DataConfigActuadores(configData[0], configData[1], configData[2]))
+                        if (data == "Q"):
+                            print("SALIR")
+                            ESTADO_BLUETOOTH = BLUE_QUIT
+                            break
+                    else:
+                        print("Error coneccion RECV")
+                        ESTADO_BLUETOOTH = BLUE_DISCONNECTED
+                        break
+
+                if len(exceptional) > 0:
+                    print("Error coneccion EXPCEPTIONAL")
+                    ESTADO_BLUETOOTH = BLUE_DISCONNECTED
+                    break
+            except select.error:
+                print("Error coneccion SELECT")
+                ESTADO_BLUETOOTH = BLUE_DISCONNECTED
+                break
+            except Exception as e:
+                print("Error coneccion DESCONOCIDO")
+                print(e)
+
+            time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
+
+        print("Cerrando SOCKET..")
+        client_socket.shutdown(2)    # 0 = done receiving, 1 = done sending, 2 = both
+        client_socket.close()
+    
     server_socket.close()
     
     return

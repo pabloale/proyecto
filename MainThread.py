@@ -63,10 +63,6 @@ GPIO.setup(VIBRADOR, GPIO.OUT)
 TOPE_LECTURA_ABAJO = 40
 TOPE_LECTURA_ARRIBA = 50
 
-#configuracion de lectura
-ultima_lectura = 0
-tolerancia = 5
-
 #Configuracion de threads
 pool = ThreadPool(processes=7)
 DEBUG = 1
@@ -97,23 +93,26 @@ while True:
     retorno_distancia_abajo = lecturas_distancia[0]
     retorno_distancia_arriba = lecturas_distancia[1]
     
-    dataSensores = DataSensores(retorno_superior_izquierdo, retorno_superior_derecho, retorno_inferior_izquierdo, retorno_inferior_derecho, retorno_distancia_abajo, retorno_distancia_arriba, dataSensoresCollection.getConfig().getPeso())
+    config = dataSensoresCollection.getConfig()
+    
+    dataSensores = DataSensores(retorno_superior_izquierdo, retorno_superior_derecho, retorno_inferior_izquierdo, retorno_inferior_derecho, retorno_distancia_abajo, retorno_distancia_arriba, config.getPeso())
     
     #dataSensores.imprimirData()
-    print(dataSensores.concatenarData())
+    #print(dataSensores.concatenarData())
     
     if (dataSensores.noHayNadieSentado()):
-        #dataSensoresCollection.append(dataSensores)
+        ##TODO comentar cuando vaya a produccion
+        dataSensoresCollection.append(dataSensores)
         
-        activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, dataSensoresCollection.getConfig().getConfigActuadorVibrador(), dataSensoresCollection.getConfig().getConfigActuadorLed(), GPIO.LOW, GPIO.LOW)
+        activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, config.getConfigActuadorVibrador(), config.getConfigActuadorLed(), GPIO.LOW, GPIO.LOW)
     elif (dataSensores.bienSentado()):
         dataSensoresCollection.append(dataSensores)
         
-        activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, dataSensoresCollection.getConfig().getConfigActuadorVibrador(), dataSensoresCollection.getConfig().getConfigActuadorLed(), GPIO.HIGH, GPIO.LOW)
+        activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, config.getConfigActuadorVibrador(), config.getConfigActuadorLed(), GPIO.HIGH, GPIO.LOW)
     else: #algun sensor no esta activado, no está bien sentado
         dataSensoresCollection.append(dataSensores)
         
-        activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, dataSensoresCollection.getConfig().getConfigActuadorVibrador(), dataSensoresCollection.getConfig().getConfigActuadorLed(), GPIO.LOW, GPIO.HIGH)
+        activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, config.getConfigActuadorVibrador(), config.getConfigActuadorLed(), GPIO.LOW, GPIO.HIGH)
     
     time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
 
