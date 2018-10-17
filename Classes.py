@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import configparser
 from datetime import datetime
 from collections import deque
 
@@ -100,6 +101,26 @@ class DataConfigActuadores:
         self.configActuadorVibrador = configActuadorVibrador
         self.configPeso = configPeso
 
+    def getConfigInicial(self):
+        #levanto la configuracion inicial
+        configParser = configparser.ConfigParser()
+        configParser.read('config.ini')
+        self.configActuadorLed = (configParser.get('CONFIG', 'ACT_LED') == "True")
+        self.configActuadorVibrador = (configParser.get('CONFIG', 'ACT_VIB') == "True")
+        self.configPeso = int(configParser.get('CONFIG', 'PESO'))
+
+    def guardarConfig(self, configActuadorLed, configActuadorVibrador, configPeso):
+        self.configActuadorLed = configActuadorLed
+        self.configActuadorVibrador = configActuadorVibrador
+        self.configPeso = configPeso
+        configParser = configparser.ConfigParser()
+        configParser.read('config.ini')
+        configParser.set('CONFIG', 'ACT_LED', str(configActuadorLed))
+        configParser.set('CONFIG', 'ACT_VIB', str(configActuadorVibrador))
+        configParser.set('CONFIG', 'PESO', str(configPeso))
+        with open('config.ini', 'w') as f:
+            configParser.write(f)
+    
     def getConfigActuadorLed(self):
         return self.configActuadorLed
 
@@ -115,6 +136,7 @@ class DataSensoresCollection:
     def __init__(self, maxLength):
         self.queue = deque([], maxLength)
         self.dataConfig = DataConfigActuadores(False, False, 65)
+        self.dataConfig.getConfigInicial()
     
     def append(self, dataSensores):
         self.queue.append(dataSensores)
@@ -129,6 +151,6 @@ class DataSensoresCollection:
     def getConfig(self):
         return self.dataConfig
 
-    def setConfig(self, dataConfigActuadores):
-        self.dataConfig = dataConfigActuadores
+    def setConfig(self, configActuadorLed, configActuadorVibrador, configPeso):
+        self.dataConfig.guardarConfig(configActuadorLed, configActuadorVibrador, configPeso)
 

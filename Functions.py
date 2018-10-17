@@ -67,7 +67,9 @@ def moduloBluetooth():
                             ##confActuadorLed<bool>;confActuadorVibracion<bool>;peso<int>
                             configData = data.split(';')
                             print("Paq config: ", data, " && ", configData)
-                            dataSensoresCollection.setConfig(DataConfigActuadores(configData[0], configData[1], configData[2]))
+                            #Aca los tipos de datos tienen que ser tal cual es descrito en el comentario anterior -> bool-bool-int
+                            #TODO probar como funciona desde la app
+                            dataSensoresCollection.setConfig(configData[0], configData[1], configData[2])
                         if (data == "Q"):
                             print("SALIR")
                             ESTADO_BLUETOOTH = BLUE_QUIT
