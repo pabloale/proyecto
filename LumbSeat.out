@@ -1,0 +1,30 @@
+Traceback (most recent call last):
+  File "/usr/lib/python3.5/configparser.py", line 1135, in _unify_values
+    sectiondict = self._sections[section]
+KeyError: 'CONFIG'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/pi/Desktop/MainThread.py", line 11, in <module>
+    from Functions import moduloBluetooth, readFuerzaResist, readDistance, activarActuadores, lecturas_distancia, lecturas_sensores, dataSensoresCollection, TIEMPO_ENTRE_LECTURAS_ENVIOS
+  File "/home/pi/Desktop/Functions.py", line 16, in <module>
+    dataSensoresCollection = DataSensoresCollection(MAX_LENGTH_COLA)
+  File "/home/pi/Desktop/Classes.py", line 139, in __init__
+    self.dataConfig.getConfigInicial()
+  File "/home/pi/Desktop/Classes.py", line 108, in getConfigInicial
+    self.configActuadorLed = (configParser.get('CONFIG', 'ACT_LED') == "True")
+  File "/usr/lib/python3.5/configparser.py", line 778, in get
+    d = self._unify_values(section, vars)
+  File "/usr/lib/python3.5/configparser.py", line 1138, in _unify_values
+    raise NoSectionError(section)
+configparser.NoSectionError: No section: 'CONFIG'
+esperando coneccion..
+Aceptada coneccion de  ('00:34:DA:E9:95:13', 1)
+Error coneccion SEND
+Cerrando SOCKET..
+esperando coneccion..
+Aceptada coneccion de  ('00:34:DA:E9:95:13', 1)
+Error coneccion SEND
+Cerrando SOCKET..
+esperando coneccion..

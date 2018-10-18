@@ -104,7 +104,7 @@ class DataConfigActuadores:
     def getConfigInicial(self):
         #levanto la configuracion inicial
         configParser = configparser.ConfigParser()
-        configParser.read('config.ini')
+        configParser.read('/home/pi/Desktop/config.ini')
         self.configActuadorLed = (configParser.get('CONFIG', 'ACT_LED') == "True")
         self.configActuadorVibrador = (configParser.get('CONFIG', 'ACT_VIB') == "True")
         self.configPeso = int(configParser.get('CONFIG', 'PESO'))
@@ -114,11 +114,11 @@ class DataConfigActuadores:
         self.configActuadorVibrador = configActuadorVibrador
         self.configPeso = configPeso
         configParser = configparser.ConfigParser()
-        configParser.read('config.ini')
+        configParser.read('/home/pi/Desktop/config.ini')
         configParser.set('CONFIG', 'ACT_LED', str(configActuadorLed))
         configParser.set('CONFIG', 'ACT_VIB', str(configActuadorVibrador))
         configParser.set('CONFIG', 'PESO', str(configPeso))
-        with open('config.ini', 'w') as f:
+        with open('/home/pi/Desktop/config.ini', 'w') as f:
             configParser.write(f)
     
     def getConfigActuadorLed(self):
