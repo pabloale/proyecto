@@ -30,18 +30,18 @@ SENSOR_FUERZA_INFERIOR_IZQ = 6; #CH6 // PIN 7
 SENSOR_FUERZA_SUPERIOR_IZQ = 7; #CH7 // PIN 8
 
 #Pines sensor de distancia
-DISTANCE_PIN_TRIGGER_ABAJO = 4 #BCM GPIO 04 // BOARD PI0N 07
-DISTANCE_PIN_ECHO_ABAJO = 3 #BCM GPIO 03 // BOARD PIN 05
+DISTANCE_PIN_TRIGGER_ARRIBA = 4 #BCM GPIO 04 // BOARD PI0N 07
+DISTANCE_PIN_ECHO_ARRIBA = 3 #BCM GPIO 03 // BOARD PIN 05
 
-DISTANCE_PIN_TRIGGER_ARRIBA = 17 #BCM GPIO 17 // BOARD PIN 11
-DISTANCE_PIN_ECHO_ARRIBA = 27 #BCM GPIO 27 // BOARD PIN 13
+DISTANCE_PIN_TRIGGER_ABAJO = 17 #BCM GPIO 17 // BOARD PIN 11
+DISTANCE_PIN_ECHO_ABAJO = 27 #BCM GPIO 27 // BOARD PIN 13
 
 #Pines de los actuadores
 LED_VERDE_IZQ = 19 #BCM GPIO 19 // BOARD PIN 35
 LED_VERDE_DER = 16 #BCM GPIO 16 // BOARD PIN 36
 LED_ROJO_IZQ = 26 #BCM GPIO 26 // BOARD PIN 37
 LED_ROJO_DER = 20 #BCM GPIO 20 // BOARD PIN 38
-VIBRADOR = 21 #BCM GPIO 21 // BOARD PIN 40
+VIBRADOR = 12 #BCM GPIO 12 // BOARD PIN 32
 
 # use Raspberry Pi board pin numbers
 GPIO.setmode(GPIO.BCM)
@@ -97,7 +97,7 @@ while True:
     
     dataSensores = DataSensores(retorno_superior_izquierdo, retorno_superior_derecho, retorno_inferior_izquierdo, retorno_inferior_derecho, retorno_distancia_abajo, retorno_distancia_arriba, config.getPeso())
     
-    #dataSensores.imprimirData()
+    dataSensores.imprimirData()
     #print(dataSensores.concatenarData())
     
     if (dataSensores.noHayNadieSentado()):

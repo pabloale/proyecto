@@ -8,7 +8,7 @@ import RPi.GPIO as GPIO
 from Classes import DataSensores, DataSensoresCollection
 
 CANT_MUESTRAS_SENSOR_DIST = 10
-MAX_LENGTH_COLA = 1000
+MAX_LENGTH_COLA = 30
 TIEMPO_ENTRE_LECTURAS_ENVIOS = 0.5
 
 lecturas_distancia = [0, 0]
@@ -48,7 +48,7 @@ def moduloBluetooth():
                         dataSensores = dataSensoresCollection.popleft()
                         if (dataSensores is not None):
                             #dataSensores.imprimirData()
-                            #print(dataSensores.concatenarData())
+                            print(dataSensores.concatenarData())
                             writable[0].send(dataSensores.concatenarData())
                         else:
                             writable[0].send("")
