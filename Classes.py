@@ -44,22 +44,22 @@ class DataSensores:
             self.UMBRAL_LECTURA_ADELANTE = 100
             self.UMBRAL_LECTURA_ATRAS = 200
             self.UMBRAL_LECTURA_ABAJO = 20
-            self.UMBRAL_LECTURA_ARRIBA = 20
+            self.UMBRAL_LECTURA_ARRIBA = 30
         elif (peso > 50 and peso <= 70):
             self.UMBRAL_LECTURA_ADELANTE = 150
             self.UMBRAL_LECTURA_ATRAS = 300
-            self.UMBRAL_LECTURA_ABAJO = 15
-            self.UMBRAL_LECTURA_ARRIBA = 15
+            self.UMBRAL_LECTURA_ABAJO = 20
+            self.UMBRAL_LECTURA_ARRIBA = 30
         elif (peso > 70 and peso <= 90):
             self.UMBRAL_LECTURA_ADELANTE = 200
             self.UMBRAL_LECTURA_ATRAS = 400
-            self.UMBRAL_LECTURA_ABAJO = 10
-            self.UMBRAL_LECTURA_ARRIBA = 10
+            self.UMBRAL_LECTURA_ABAJO = 20
+            self.UMBRAL_LECTURA_ARRIBA = 30
         elif (peso > 90):
             self.UMBRAL_LECTURA_ADELANTE = 250
             self.UMBRAL_LECTURA_ATRAS = 500
-            self.UMBRAL_LECTURA_ABAJO = 7
-            self.UMBRAL_LECTURA_ARRIBA = 7
+            self.UMBRAL_LECTURA_ABAJO = 20
+            self.UMBRAL_LECTURA_ARRIBA = 30
     
     #No hay nadie sentado
     def noHayNadieSentado(self):
@@ -110,14 +110,14 @@ class DataConfigActuadores:
         self.configPeso = int(configParser.get('CONFIG', 'PESO'))
 
     def guardarConfig(self, configActuadorLed, configActuadorVibrador, configPeso):
-        self.configActuadorLed = configActuadorLed
-        self.configActuadorVibrador = configActuadorVibrador
-        self.configPeso = configPeso
+        self.configActuadorLed = (configActuadorLed == "true")
+        self.configActuadorVibrador = (configActuadorVibrador == "true")
+        self.configPeso = int(configPeso)
         configParser = configparser.ConfigParser()
         configParser.read('/home/pi/Desktop/config.ini')
-        configParser.set('CONFIG', 'ACT_LED', str(configActuadorLed))
-        configParser.set('CONFIG', 'ACT_VIB', str(configActuadorVibrador))
-        configParser.set('CONFIG', 'PESO', str(configPeso))
+        configParser.set('CONFIG', 'ACT_LED', str(configActuadorLed == "true"))
+        configParser.set('CONFIG', 'ACT_VIB', str(configActuadorVibrador == "true"))
+        configParser.set('CONFIG', 'PESO', str(int(configPeso)))
         with open('/home/pi/Desktop/config.ini', 'w') as f:
             configParser.write(f)
     

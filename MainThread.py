@@ -58,10 +58,11 @@ GPIO.setup(LED_VERDE_DER, GPIO.OUT)
 GPIO.setup(LED_ROJO_IZQ, GPIO.OUT)
 GPIO.setup(LED_ROJO_DER, GPIO.OUT)
 GPIO.setup(VIBRADOR, GPIO.OUT)
+activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, True, True, GPIO.LOW, GPIO.LOW)
 
 #Config de lectura de los sensores
-TOPE_LECTURA_ABAJO = 40
-TOPE_LECTURA_ARRIBA = 50
+TOPE_LECTURA_ABAJO = 60
+TOPE_LECTURA_ARRIBA = 70
 
 #Configuracion de threads
 pool = ThreadPool(processes=7)
