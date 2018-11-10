@@ -42,24 +42,24 @@ class DataSensores:
     def configUmbrales(self, peso):
         if (peso <= 50):
             self.UMBRAL_LECTURA_ADELANTE = 100
-            self.UMBRAL_LECTURA_ATRAS = 200
-            self.UMBRAL_LECTURA_ABAJO = 20
-            self.UMBRAL_LECTURA_ARRIBA = 30
+            self.UMBRAL_LECTURA_ATRAS = 250
+            self.UMBRAL_LECTURA_ABAJO = 15
+            self.UMBRAL_LECTURA_ARRIBA = 25
         elif (peso > 50 and peso <= 70):
             self.UMBRAL_LECTURA_ADELANTE = 150
             self.UMBRAL_LECTURA_ATRAS = 300
-            self.UMBRAL_LECTURA_ABAJO = 20
-            self.UMBRAL_LECTURA_ARRIBA = 30
+            self.UMBRAL_LECTURA_ABAJO = 15
+            self.UMBRAL_LECTURA_ARRIBA = 25
         elif (peso > 70 and peso <= 90):
             self.UMBRAL_LECTURA_ADELANTE = 200
             self.UMBRAL_LECTURA_ATRAS = 400
-            self.UMBRAL_LECTURA_ABAJO = 20
-            self.UMBRAL_LECTURA_ARRIBA = 30
+            self.UMBRAL_LECTURA_ABAJO = 15
+            self.UMBRAL_LECTURA_ARRIBA = 25
         elif (peso > 90):
             self.UMBRAL_LECTURA_ADELANTE = 250
             self.UMBRAL_LECTURA_ATRAS = 500
-            self.UMBRAL_LECTURA_ABAJO = 20
-            self.UMBRAL_LECTURA_ARRIBA = 30
+            self.UMBRAL_LECTURA_ABAJO = 15
+            self.UMBRAL_LECTURA_ARRIBA = 25
     
     #No hay nadie sentado
     def noHayNadieSentado(self):
@@ -153,4 +153,33 @@ class DataSensoresCollection:
 
     def setConfig(self, configActuadorLed, configActuadorVibrador, configPeso):
         self.dataConfig.guardarConfig(configActuadorLed, configActuadorVibrador, configPeso)
+
+
+class LecturasDistanciaBuffer:
+    
+    def __init__(self):
+        self.queueAbajo = deque([], 5)
+        self.queueArriba = deque([], 5)
+    
+    def append(self, esAbajo, lecturaActual):
+        self.queueAbajo.append(lecturaActual) if esAbajo else self.queueArriba.append(lecturaActual)
+    
+    def popleft(self, esAbajo):
+        if (self.len(esAbajo) != 0):
+            return self.queueAbajo.popleft() if esAbajo else self.queueArriba.popleft()
+
+    def len(self, esAbajo):
+        return len(self.queueAbajo) if esAbajo else len(self.queueArriba)
+    
+    def estaTrabado(self, esAbajo):
+        if self.len(esAbajo) > 3:
+            datoUno = self.popleft(esAbajo)
+            datoDos = self.popleft(esAbajo)
+            datoTres = self.popleft(esAbajo)
+            if (datoUno == 0 or datoDos == 0 or datoTres == 0 or datoUno != datoDos or datoDos != datoTres):
+                return False
+            else:
+                return True
+        else:
+            return False
 

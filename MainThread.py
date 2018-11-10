@@ -7,8 +7,8 @@ import time
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 
-from Classes import DataSensores
-from Functions import moduloBluetooth, readFuerzaResist, readDistance, activarActuadores, lecturas_distancia, lecturas_sensores, dataSensoresCollection, TIEMPO_ENTRE_LECTURAS_ENVIOS
+from Classes import DataSensores, LecturasDistanciaBuffer
+from Functions import moduloBluetooth, readFuerzaResist, readDistanceInfiniteRead, readDistanceUniqueRead, activarActuadores, estaTrabado, lecturas_distancia, lecturas_sensores, dataSensoresCollection, TIEMPO_ENTRE_LECTURAS_ENVIOS
 
 def close(signal, frame):
     print("\nLimpiando la configuracion de pines...\n")
@@ -66,10 +66,12 @@ TOPE_LECTURA_ARRIBA = 70
 
 #Configuracion de threads
 pool = ThreadPool(processes=7)
+poolDistance1 = ThreadPool(processes=2)
+poolDistance2 = ThreadPool(processes=2)
 DEBUG = 1
 
-lectura_distancia_abajo_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO, TOPE_LECTURA_ABAJO, 0))
-lectura_distancia_arriba_async = pool.apply_async(readDistance, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA, TOPE_LECTURA_ARRIBA, 1))
+#lectura_distancia_abajo_async = pool.apply_async(readDistanceInfiniteRead, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO, TOPE_LECTURA_ABAJO, 0))
+#lectura_distancia_arriba_async = pool.apply_async(readDistanceInfiniteRead, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA, TOPE_LECTURA_ARRIBA, 1))
 #retorno_distancia_abajo = lectura_distancia_abajo_async.get()
 #retorno_distancia_arriba = lectura_distancia_arriba_async.get()
 
@@ -83,6 +85,8 @@ lectura_actual_superior_derecho = pool.apply_async(readFuerzaResist, (SENSOR_FUE
 # retorno_superior_derecho = lectura_actual_superior_derecho.get()
 
 pool.apply_async(moduloBluetooth)
+
+bufferLecturasDistancia = LecturasDistanciaBuffer()
 
 #proceso principal
 while True:
@@ -101,19 +105,26 @@ while True:
     dataSensores.imprimirData()
     #print(dataSensores.concatenarData())
     
+    bufferLecturasDistancia.append(True, retorno_distancia_abajo)
+    bufferLecturasDistancia.append(False, retorno_distancia_arriba)
+    
     if (dataSensores.noHayNadieSentado()):
         ##TODO comentar cuando vaya a produccion
-        dataSensoresCollection.append(dataSensores)
+        #dataSensoresCollection.append(dataSensores)
         
         activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, config.getConfigActuadorVibrador(), config.getConfigActuadorLed(), GPIO.LOW, GPIO.LOW)
-    elif (dataSensores.bienSentado()):
-        dataSensoresCollection.append(dataSensores)
+    else:
+        estaTrabado[0] = bufferLecturasDistancia.estaTrabado(True)
+        estaTrabado[1] = bufferLecturasDistancia.estaTrabado(False)
         
-        activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, config.getConfigActuadorVibrador(), config.getConfigActuadorLed(), GPIO.HIGH, GPIO.LOW)
-    else: #algun sensor no esta activado, no está bien sentado
-        dataSensoresCollection.append(dataSensores)
+        poolDistance1.apply_async(readDistanceUniqueRead, (DISTANCE_PIN_TRIGGER_ABAJO, DISTANCE_PIN_ECHO_ABAJO, TOPE_LECTURA_ABAJO, 0))
+        poolDistance2.apply_async(readDistanceUniqueRead, (DISTANCE_PIN_TRIGGER_ARRIBA, DISTANCE_PIN_ECHO_ARRIBA, TOPE_LECTURA_ARRIBA, 1))
         
-        activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, config.getConfigActuadorVibrador(), config.getConfigActuadorLed(), GPIO.LOW, GPIO.HIGH)
+        dataSensoresCollection.append(dataSensores)
+        if (dataSensores.bienSentado()):
+            activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, config.getConfigActuadorVibrador(), config.getConfigActuadorLed(), GPIO.HIGH, GPIO.LOW)
+        else: #algun sensor no esta activado, no está bien sentado
+            activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, config.getConfigActuadorVibrador(), config.getConfigActuadorLed(), GPIO.LOW, GPIO.HIGH)
     
     time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
 

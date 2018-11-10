@@ -17,3 +17,25 @@ print("Acabe de saludar")
 #sudo kill <pid>
 
 #tail -f Desktop/LumbSeat.out
+
+##========================================
+
+#cd /home/pi
+#cd .config
+#mkdir autostart
+#cd autostart
+##/home/pi/.local/share/applications/realvnc-vncserverui-user.desktop
+##Exec=vncserver-x11 -showstatus
+
+#nano tightvnc.desktop 
+##[Desktop Entry]
+##Type=Application
+##Name=TightVNC
+##Exec=vncserver :1
+##StartupNotify=false
+
+##nano vncviewer.desktop
+##[Desktop Entry]
+##Name=VNC Viewer
+##Type=Application
+##Exec=xtightvncviewer 192.168.0.1 -p /home/pi/.vnc/passwd -fullscreen

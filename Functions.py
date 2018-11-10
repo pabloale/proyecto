@@ -11,6 +11,7 @@ CANT_MUESTRAS_SENSOR_DIST = 10
 MAX_LENGTH_COLA = 30
 TIEMPO_ENTRE_LECTURAS_ENVIOS = 0.5
 
+estaTrabado = [False, False]
 lecturas_distancia = [0, 0]
 lecturas_sensores = [0, 0, 0, 0]
 dataSensoresCollection = DataSensoresCollection(MAX_LENGTH_COLA)
@@ -153,7 +154,7 @@ def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin, index):
     
     return resultado / CANT_MUESTRAS_SENSOR_DIST
 
-def readDistance(triggerpin, echopin, topeLectura, index):
+def readDistanceInfiniteRead(triggerpin, echopin, topeLectura, index):
 
     global TIEMPO_ENTRE_LECTURAS_ENVIOS
     global lecturas_distancia
@@ -210,6 +211,70 @@ def readDistance(triggerpin, echopin, topeLectura, index):
         #print("fin sleep", index)
     
     return distance
+
+def readDistanceUniqueRead(triggerpin, echopin, topeLectura, index):
+
+    global TIEMPO_ENTRE_LECTURAS_ENVIOS
+    global lecturas_distancia
+    global estaTrabado
+    distance = 0
+    
+    VEL_ULTRASONIDO = 34300 #34300 cm/s
+    
+    # set GPIO input and output channels
+    GPIO.setup(triggerpin, GPIO.OUT)
+    GPIO.setup(echopin, GPIO.IN)
+    
+    distance = -1
+    while distance < 0 or distance > topeLectura:
+        
+        GPIO.output(triggerpin, GPIO.LOW)
+        #print("esperando que el sensor se estabilice")
+        #time.sleep(2)
+        time.sleep(0.00001)
+        #print("calculando distancia")
+        
+        # set Trigger to HIGH
+        GPIO.output(triggerpin, GPIO.HIGH)
+        # set Trigger after 0.01ms to LOW
+        time.sleep(0.00001)
+        GPIO.output(triggerpin, GPIO.LOW)
+        
+        #print("por calcular el tiempo de respuesta")
+        
+        pulse_start_time = time.time()
+        pulse_end_time = time.time()
+        
+        # save start time
+        while not estaTrabado[index] and GPIO.input(echopin)==0:
+            pulse_start_time = time.time()
+            #print("while PIN_ECHO = 0")
+        # save time of arrival
+        while not estaTrabado[index] and GPIO.input(echopin)==1:
+            pulse_end_time = time.time()
+            #print("while PIN_ECHO = 1")
+        
+        #print("tiempo de respuesta calculado")
+        # time difference between start and arrival
+        pulse_duration = pulse_end_time - pulse_start_time
+        # multiply with the sonic speed (34300 cm/s) and divide by 2, because there and back
+        distance = round(pulse_duration * VEL_ULTRASONIDO / 2, 2)
+        if (estaTrabado[index]):
+            distance = 0
+            #print("Distance de ", index, ": ", distance, "cm", pulse_start_time, pulse_end_time)
+        #print("Distance de ", index, ": ", distance, "cm")
+        time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS/2)
+    
+    #print("seteo distancia", index)
+    lecturas_distancia[index] = distance
+    #print("sleep", index)
+    time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
+    #print("fin sleep", index)
+    
+    GPIO.cleanup(triggerpin)
+    GPIO.cleanup(echopin)
+    
+    return
 
 #LED_VERDE_IZQ - LED_VERDE_DER - LED_ROJO_IZQ - LED_ROJO_DER - VIBRADOR
 def activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, configActVibr, configActLed, verdeActivo, rojoActivo):
