@@ -20,6 +20,7 @@ BLUE_CONNECTED = 1
 BLUE_QUIT = 2
 ESTADO_BLUETOOTH = BLUE_DISCONNECTED
 
+
 def moduloBluetooth():
     
     global TIEMPO_ENTRE_LECTURAS_ENVIOS
@@ -49,10 +50,10 @@ def moduloBluetooth():
                         dataSensores = dataSensoresCollection.popleft()
                         if (dataSensores is not None):
                             #dataSensores.imprimirData()
-                            print(dataSensores.concatenarData())
+                            #print(dataSensores.concatenarData())
                             writable[0].send(dataSensores.concatenarData())
                         else:
-                            writable[0].send("")
+                            writable[0].send("V")
                     except bluetooth.BluetoothError as e:
                         print("Error coneccion SEND")
                         ESTADO_BLUETOOTH = BLUE_DISCONNECTED
@@ -64,7 +65,7 @@ def moduloBluetooth():
                         data = data.decode()
                         print("Recibido: %s" %data)
                         if (data == "CF"):
-                            data = readable[0].recv(1024).decode()
+                            data = readable[0].recv(7).decode()
                             ##confActuadorLed<bool>;confActuadorVibracion<bool>;peso<int>
                             configData = data.split(';')
                             print("Paq config: ", data, " && ", configData)
@@ -101,6 +102,7 @@ def moduloBluetooth():
     server_socket.close()
     
     return
+
 
 def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin, index):
     
@@ -153,6 +155,7 @@ def readFuerzaResist(adcnum, clockpin, mosipin, misopin, cspin, index):
         time.sleep(TIEMPO_ENTRE_LECTURAS_ENVIOS)
     
     return resultado / CANT_MUESTRAS_SENSOR_DIST
+
 
 def readDistanceInfiniteRead(triggerpin, echopin, topeLectura, index):
 
@@ -211,6 +214,7 @@ def readDistanceInfiniteRead(triggerpin, echopin, topeLectura, index):
         #print("fin sleep", index)
     
     return distance
+
 
 def readDistanceUniqueRead(triggerpin, echopin, topeLectura, index):
 
@@ -275,6 +279,7 @@ def readDistanceUniqueRead(triggerpin, echopin, topeLectura, index):
     GPIO.cleanup(echopin)
     
     return
+
 
 #LED_VERDE_IZQ - LED_VERDE_DER - LED_ROJO_IZQ - LED_ROJO_DER - VIBRADOR
 def activarActuadores(LED_VERDE_IZQ, LED_VERDE_DER, LED_ROJO_IZQ, LED_ROJO_DER, VIBRADOR, configActVibr, configActLed, verdeActivo, rojoActivo):
